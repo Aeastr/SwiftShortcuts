@@ -163,6 +163,8 @@ The response contains:
 - `icon_glyph` - SF Symbol glyph identifier
 - `icon` - Custom icon image URL (if set)
 
+See [Docs/iCloud-API.md](Docs/iCloud-API.md) for full response structure and color code mappings.
+
 ### Color Mapping
 
 Apple stores shortcut colors as Int64 codes. These are mapped to SwiftUI gradients:
