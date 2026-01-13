@@ -129,14 +129,18 @@ struct ShortcutService: Sendable {
                 return nil
             }
 
+            let params = dict["WFWorkflowActionParameters"] as? [String: Any]
+
             // Extract control flow mode if present
             var controlFlowMode: WorkflowAction.ControlFlowMode?
-            if let params = dict["WFWorkflowActionParameters"] as? [String: Any],
-               let modeValue = params["WFControlFlowMode"] as? Int {
+            if let modeValue = params?["WFControlFlowMode"] as? Int {
                 controlFlowMode = WorkflowAction.ControlFlowMode(rawValue: modeValue)
             }
 
-            return WorkflowAction(identifier: identifier, controlFlowMode: controlFlowMode)
+            // Extract subtitle/context based on action type
+            let subtitle = Self.extractSubtitle(identifier: identifier, params: params, controlFlowMode: controlFlowMode)
+
+            return WorkflowAction(identifier: identifier, controlFlowMode: controlFlowMode, subtitle: subtitle)
         }
     }
 
@@ -164,5 +168,66 @@ struct ShortcutService: Sendable {
     private func constructAssetURL(_ templateURL: String?) -> String? {
         guard let templateURL else { return nil }
         return templateURL.replacingOccurrences(of: "${f}", with: "shortcut.plist")
+    }
+
+    // MARK: - Subtitle Extraction
+
+    private static func extractSubtitle(
+        identifier: String,
+        params: [String: Any]?,
+        controlFlowMode: WorkflowAction.ControlFlowMode?
+    ) -> String? {
+        guard let params else { return nil }
+
+        // Don't show subtitles for end markers
+        if controlFlowMode == .end { return nil }
+
+        // Menu items show their title
+        if controlFlowMode == .middle,
+           identifier == "is.workflow.actions.choosefrommenu",
+           let title = params["WFMenuItemTitle"] as? String {
+            return title
+        }
+
+        // Conditionals use the condition mappings
+        if identifier == "is.workflow.actions.conditional", controlFlowMode == .start {
+            let condition = params["WFCondition"] as? Int ?? 4
+            if let format = conditionMappings[condition] {
+                if format.contains("%@") {
+                    let value = extractValue(from: params, keys: ["WFConditionalActionString", "WFNumberValue"])
+                    return format.replacingOccurrences(of: "%@", with: value ?? "?")
+                }
+                return format
+            }
+        }
+
+        // Use subtitleKey from mappings if available
+        if let info = actionMappings[identifier], let key = info.subtitleKey {
+            return extractValue(from: params, keys: [key])
+        }
+
+        return nil
+    }
+
+    /// Extracts a displayable value from params, trying multiple keys.
+    private static func extractValue(from params: [String: Any], keys: [String]) -> String? {
+        for key in keys {
+            // Direct string
+            if let str = params[key] as? String, !str.isEmpty {
+                return str.count > 40 ? String(str.prefix(40)) + "..." : str
+            }
+            // Number
+            if let num = params[key] as? NSNumber {
+                return "\(num)"
+            }
+            // Serialized token
+            if let dict = params[key] as? [String: Any],
+               let text = dict["Value"] as? [String: Any],
+               let string = text["string"] as? String,
+               !string.isEmpty {
+                return string.count > 40 ? String(string.prefix(40)) + "..." : string
+            }
+        }
+        return nil
     }
 }

@@ -87,9 +87,17 @@ private struct ActionRow: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 24)
 
-            // Action name
-            Text(action.displayName)
-                .font(.subheadline)
+            // Action name and subtitle
+            VStack(alignment: .leading, spacing: 2) {
+                Text(action.displayName)
+                    .font(.subheadline)
+
+                if let subtitle = action.subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             Spacer()
         }
