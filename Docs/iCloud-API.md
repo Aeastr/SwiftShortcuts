@@ -2,6 +2,8 @@
 
 This document describes the undocumented iCloud API used to fetch shortcut metadata.
 
+> **Note on naming:** Apple Shortcuts was originally an app called "Workflow" before Apple acquired it in 2017. The internal format still uses `WFWorkflow*` prefixes throughout (WF = Workflow).
+
 ## Endpoint
 
 ```
@@ -94,8 +96,8 @@ https://www.icloud.com/shortcuts/abc123def456
 | `name` | STRING | Display name of the shortcut | Yes |
 | `icon_color` | NUMBER_INT64 | Internal color code (see [Color Codes](#color-codes)) | Yes |
 | `icon_glyph` | NUMBER_INT64 | Unknown - possibly SF Symbol codepoint or internal glyph ID | No |
-| `icon` | ASSETID | Custom icon image (if user set one) | Yes |
-| `shortcut` | ASSETID | The shortcut file (plist) | Partial |
+| `icon` | ASSETID | Custom icon image - PNG format (see [Asset Formats](#asset-formats)) | Yes |
+| `shortcut` | ASSETID | The shortcut file - binary plist (see [Asset Formats](#asset-formats)) | Yes |
 | `signedShortcut` | ASSETID | Signed version of the shortcut | No |
 | `signingStatus` | STRING | Signing status, e.g. "APPROVED" | No |
 | `signingCertificateExpirationDate` | TIMESTAMP | Likely signing cert expiration | No |
@@ -134,9 +136,52 @@ Apple stores shortcut colors as Int64 values. Known mappings:
 
 Some colors have alternate codes that map to the same gradient.
 
+## Asset Formats
+
+### `icon` Asset
+
+**Format:** PNG image
+
+The custom icon set by the user (if any). Not all shortcuts have this - when absent, the app displays the default glyph with the background color.
+
+### `shortcut` Asset
+
+**Format:** Binary plist (bplist)
+
+The complete workflow definition - you can see every action/step in the shortcut. Contains:
+
+- **Workflow metadata** - version, client version, icon properties
+- **Actions array** - every step in order, fully visible
+- **Parameters** - inputs, filters, app references for each action
+- **Control flow** - conditionals, loops, variables
+
+Example structure (conceptual):
+```
+{
+  WFWorkflowMinimumClientVersion: 900,
+  WFWorkflowIcon: { ... },
+  WFWorkflowActions: [
+    { WFWorkflowActionIdentifier: "is.workflow.actions.getupcomingcalendarevents", ... },
+    { WFWorkflowActionIdentifier: "is.workflow.actions.filter.notes", ... },
+    { WFWorkflowActionIdentifier: "is.workflow.actions.conditional", ... },
+    ...
+  ]
+}
+```
+
+Action identifiers follow the pattern `is.workflow.actions.*` for built-in actions, or app bundle identifiers for third-party integrations.
+
+### Download URL Format
+
+Asset URLs contain a `${f}` placeholder for the filename:
+```
+https://cvws.icloud-content.com/B/{checksum}/${f}?...
+```
+
+Replace `${f}` with any filename (e.g., `shortcut.plist`, `icon.png`).
+
 ## Notes
 
 - This is an undocumented API and may change without notice
 - The API is read-only; you cannot modify shortcuts through it
 - Only publicly shared shortcuts are accessible
-- The `shortcut` asset contains the actual shortcut definition (plist format)
