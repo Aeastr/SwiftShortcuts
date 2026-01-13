@@ -54,10 +54,10 @@ public struct WorkflowAction: Identifiable, Sendable {
             return info.name
         }
 
-        // Fallback: parse last component of identifier
+        // Fallback: split last component using common words
         let parts = identifier.split(separator: ".")
         if let last = parts.last {
-            return String(last).capitalized
+            return splitIdentifier(String(last))
         }
 
         return identifier
@@ -71,18 +71,57 @@ public struct WorkflowAction: Identifiable, Sendable {
         }
 
         // Fallback based on identifier patterns
+        if identifier.contains("transcribe") { return "waveform" }
+        if identifier.contains("record") { return "mic" }
+        if identifier.contains("audio") { return "waveform" }
+        if identifier.contains("video") { return "video" }
+        if identifier.contains("camera") { return "camera" }
+        if identifier.contains("photo") { return "photo" }
+        if identifier.contains("image") { return "photo" }
         if identifier.contains("calendar") { return "calendar" }
+        if identifier.contains("reminder") { return "checklist" }
         if identifier.contains("note") { return "note.text" }
         if identifier.contains("alert") { return "exclamationmark.bubble" }
+        if identifier.contains("notification") { return "bell" }
         if identifier.contains("conditional") { return "arrow.triangle.branch" }
+        if identifier.contains("repeat") { return "repeat" }
         if identifier.contains("text") { return "text.alignleft" }
         if identifier.contains("app") { return "app" }
-        if identifier.contains("photo") { return "photo" }
         if identifier.contains("mail") { return "envelope" }
         if identifier.contains("message") { return "message" }
         if identifier.contains("web") || identifier.contains("url") { return "globe" }
-        if identifier.contains("file") { return "doc" }
+        if identifier.contains("file") || identifier.contains("document") { return "doc" }
+        if identifier.contains("folder") { return "folder" }
         if identifier.contains("clipboard") { return "clipboard" }
+        if identifier.contains("share") { return "square.and.arrow.up" }
+        if identifier.contains("download") { return "arrow.down.circle" }
+        if identifier.contains("upload") { return "arrow.up.circle" }
+        if identifier.contains("location") { return "location" }
+        if identifier.contains("map") { return "map" }
+        if identifier.contains("weather") { return "cloud.sun" }
+        if identifier.contains("music") { return "music.note" }
+        if identifier.contains("play") { return "play" }
+        if identifier.contains("pause") { return "pause" }
+        if identifier.contains("stop") { return "stop" }
+        if identifier.contains("timer") { return "timer" }
+        if identifier.contains("alarm") { return "alarm" }
+        if identifier.contains("health") { return "heart" }
+        if identifier.contains("workout") { return "figure.run" }
+        if identifier.contains("home") { return "house" }
+        if identifier.contains("device") { return "iphone" }
+        if identifier.contains("bluetooth") { return "bluetooth" }
+        if identifier.contains("wifi") { return "wifi" }
+        if identifier.contains("brightness") { return "sun.max" }
+        if identifier.contains("volume") { return "speaker.wave.2" }
+        if identifier.contains("flashlight") { return "flashlight.on.fill" }
+        if identifier.contains("qr") { return "qrcode" }
+        if identifier.contains("scan") { return "barcode.viewfinder" }
+        if identifier.contains("translate") { return "character.book.closed" }
+        if identifier.contains("dictionary") { return "character.book.closed" }
+        if identifier.contains("calculate") { return "function" }
+        if identifier.contains("math") { return "function" }
+        if identifier.contains("script") { return "terminal" }
+        if identifier.contains("ssh") { return "terminal" }
 
         return "gearshape"
     }

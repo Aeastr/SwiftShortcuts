@@ -9,199 +9,174 @@ import SwiftUI
 public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
     public init() {}
 
+    private let nodeSize: CGFloat = 32
+    private let connectorHeight: CGFloat = 16
+    private let indentWidth: CGFloat = 24
+
+    // MARK: - Body
+
     @MainActor
     public func makeBody(configuration: ShortcutActionsViewStyleConfiguration) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
             if !configuration.shortcutName.isEmpty {
-                HStack {
-                    if let gradient = configuration.gradient {
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(gradient)
-                            .frame(width: 24, height: 24)
-                    }
-
-                    Text(configuration.shortcutName)
-                        .font(.headline)
-
-                    Spacer()
-
-                    Text("\(configuration.actions.count) actions")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding()
-
+                makeHeader(configuration: configuration)
                 Divider()
             }
 
             if configuration.isLoading {
-                HStack {
-                    Spacer()
-                    ProgressView()
-                        .padding()
-                    Spacer()
-                }
+                makeLoadingState()
             } else if configuration.actions.isEmpty {
-                HStack {
-                    Spacer()
-                    Text("No actions")
-                        .foregroundStyle(.secondary)
-                        .padding()
-                    Spacer()
-                }
+                makeEmptyState()
             } else {
-                // Flow visualization
-                FlowContent(actions: configuration.actions, gradient: configuration.gradient)
+                makeActionList(configuration: configuration)
                     .padding()
             }
         }
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
-}
 
-// MARK: - Flow Content
+    // MARK: - Node (Protocol Override)
 
-private struct FlowContent: View {
-    let actions: [WorkflowAction]
-    let gradient: LinearGradient?
+    @MainActor
+    public func makeNode(action: WorkflowAction, gradient: LinearGradient?) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            // Icon circle
+            ZStack {
+                if action.isControlFlowMarker {
+                    Circle()
+                        .strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1.5)
+                        .frame(width: nodeSize, height: nodeSize)
+                } else {
+                    Circle()
+                        .fill(gradient ?? LinearGradient(colors: [.gray], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: nodeSize, height: nodeSize)
+                }
 
-    var body: some View {
+                Image(systemName: action.systemImage)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(action.isControlFlowMarker ? .secondary : .white)
+            }
+
+            // Labels
+            VStack(alignment: .leading, spacing: 2) {
+                Text(action.displayName)
+                    .font(.subheadline)
+                    .foregroundStyle(action.isControlFlowMarker ? .secondary : .primary)
+
+                if let subtitle = action.subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Action List
+
+    @MainActor @ViewBuilder
+    private func makeActionList(configuration: ShortcutActionsViewStyleConfiguration) -> some View {
+        let actions = configuration.actions
+
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(actions.enumerated()), id: \.element.id) { index, action in
-                let indentLevel = calculateIndentLevel(upTo: index)
+                let indentLevel = calculateIndentLevel(actions: actions, upTo: index)
                 let isLast = index == actions.count - 1
+                let nextIndentLevel = isLast ? indentLevel : calculateIndentLevel(actions: actions, upTo: index + 1)
+                let indentChange = nextIndentLevel - indentLevel  // positive = deeper, negative = shallower
 
-                FlowNode(
+                makeFlowNode(
                     action: action,
                     indentLevel: indentLevel,
                     showConnector: !isLast,
-                    gradient: gradient
+                    indentChange: indentChange,
+                    gradient: configuration.gradient
                 )
             }
         }
     }
 
-    /// Calculate indent level based on control flow nesting.
-    private func calculateIndentLevel(upTo index: Int) -> Int {
+    // MARK: - Flow Node (with indentation)
+
+    @MainActor @ViewBuilder
+    private func makeFlowNode(
+        action: WorkflowAction,
+        indentLevel: Int,
+        showConnector: Bool,
+        indentChange: Int,
+        gradient: LinearGradient?
+    ) -> some View {
+        let nodeHeight: CGFloat = action.subtitle != nil ? 56 : 44
+
+        VStack(spacing: 0) {
+            makeNode(action: action, gradient: gradient)
+                .frame(height: nodeHeight)
+
+            if showConnector {
+                makeConnector(indentChange: indentChange)
+            }
+        }
+        .padding(.leading, CGFloat(indentLevel) * indentWidth)
+    }
+
+    // MARK: - Connector
+
+    @MainActor @ViewBuilder
+    private func makeConnector(indentChange: Int) -> some View {
+        HStack {
+            Rectangle()
+                .fill(Color.secondary.opacity(0.3))
+                .frame(width: 2, height: connectorHeight)
+                .mask(connectorMask(indentChange: indentChange))
+                .offset(x: (nodeSize / 2) - 1)
+            Spacer()
+        }
+    }
+
+    private func connectorMask(indentChange: Int) -> some View {
+        Group {
+            if indentChange > 0 {
+                // Going deeper: fade out at bottom
+                LinearGradient(
+                    colors: [.white, .clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            } else if indentChange < 0 {
+                // Going shallower: hidden
+                Color.clear
+            } else {
+                // Same level: solid
+                Color.white
+            }
+        }
+    }
+
+    // MARK: - Indent Calculation
+
+    private func calculateIndentLevel(actions: [WorkflowAction], upTo index: Int) -> Int {
         var level = 0
         for i in 0..<index {
-            let action = actions[i]
-            if let mode = action.controlFlowMode {
+            if let mode = actions[i].controlFlowMode {
                 switch mode {
-                case .start:
-                    level += 1
-                case .middle:
-                    // Stay at same level (already decremented, now increment back)
-                    break
-                case .end:
-                    level = max(0, level - 1)
+                case .start: level += 1
+                case .middle: break
+                case .end: level = max(0, level - 1)
                 }
             }
         }
 
-        // Adjust for current action
         if let mode = actions[index].controlFlowMode {
             switch mode {
-            case .start:
-                break // Will indent children, not self
-            case .middle, .end:
-                level = max(0, level - 1)
+            case .start: break
+            case .middle, .end: level = max(0, level - 1)
             }
         }
 
         return level
-    }
-}
-
-// MARK: - Flow Node
-
-private struct FlowNode: View {
-    let action: WorkflowAction
-    let indentLevel: Int
-    let showConnector: Bool
-    let gradient: LinearGradient?
-
-    private var nodeHeight: CGFloat {
-        action.subtitle != nil ? 56 : 44
-    }
-    private let connectorHeight: CGFloat = 16
-    private let indentWidth: CGFloat = 24
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            // Indent spacing
-            if indentLevel > 0 {
-                HStack(spacing: 0) {
-                    ForEach(0..<indentLevel, id: \.self) { _ in
-                        Rectangle()
-                            .fill(Color.secondary.opacity(0.2))
-                            .frame(width: 2)
-                            .padding(.horizontal, (indentWidth - 2) / 2)
-                    }
-                }
-                .frame(height: nodeHeight + (showConnector ? connectorHeight : 0))
-            }
-
-            // Node and connector
-            VStack(spacing: 0) {
-                // Action node
-                HStack(alignment: .center, spacing: 10) {
-                    // Icon
-                    ZStack {
-                        if action.isControlFlowMarker {
-                            Circle()
-                                .strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1.5)
-                                .frame(width: 32, height: 32)
-                        } else {
-                            Circle()
-                                .fill(nodeGradient)
-                                .frame(width: 32, height: 32)
-                        }
-
-                        Image(systemName: action.systemImage)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(action.isControlFlowMarker ? .secondary : .white)
-                    }
-
-                    // Name and subtitle
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(action.displayName)
-                            .font(.subheadline)
-                            .foregroundStyle(action.isControlFlowMarker ? .secondary : .primary)
-
-                        if let subtitle = action.subtitle {
-                            Text(subtitle)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    Spacer()
-                }
-                .frame(height: nodeHeight)
-
-                // Connector line
-                if showConnector {
-                    HStack {
-                        Rectangle()
-                            .fill(Color.secondary.opacity(0.3))
-                            .frame(width: 2, height: connectorHeight)
-                            .offset(x: 15) // Center under the node icon
-                        Spacer()
-                    }
-                }
-            }
-        }
-    }
-
-    private var nodeGradient: LinearGradient {
-        gradient ?? LinearGradient(
-            colors: [.gray],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
     }
 }
 
@@ -215,8 +190,8 @@ extension ShortcutActionsViewStyle where Self == FlowShortcutActionsViewStyle {
 // MARK: - Preview
 
 #Preview("Flow Style") {
-    ScrollView{
-        ShortcutActionsView(url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f")
+    ScrollView {
+        ShortcutActionsView(url: "https://www.icloud.com/shortcuts/c1e20b45e054478d9b3ed6636ad6be72")
             .shortcutActionsViewStyle(.flow)
             .padding()
     }

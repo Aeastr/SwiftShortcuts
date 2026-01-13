@@ -3,7 +3,17 @@
 //  SwiftShortcuts
 //
 //  Reference table for Shortcuts action identifiers.
-//  Add new mappings here as they're discovered.
+//
+//  ┌────────────────────────────────────────────────────────────────────┐
+//  │  CONTRIBUTIONS WELCOME!                                            │
+//  │                                                                    │
+//  │  This list is incomplete. Apple has hundreds of actions and we    │
+//  │  can't map them all ourselves. Found an action showing the wrong  │
+//  │  name or icon? Add it here and open a PR!                         │
+//  │                                                                    │
+//  │  Format:                                                           │
+//  │  "identifier": ActionInfo("Display Name", icon: "sf.symbol")      │
+//  └────────────────────────────────────────────────────────────────────┘
 //
 
 import Foundation

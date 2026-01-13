@@ -204,7 +204,30 @@ This launches the Shortcuts app directly to the shortcut.
 
 ## Contributing
 
-Contributions welcome. Please feel free to submit a Pull Request.
+Contributions welcome! Some easy ways to help:
+
+### Action Mappings
+
+Apple Shortcuts has hundreds of actions. We can't map them all ourselves! If you see an action displaying incorrectly:
+
+1. **Wrong name?** Add it to [`ActionMappings.swift`](Sources/SwiftShortcuts/Internal/ActionMappings.swift):
+   ```swift
+   "is.workflow.actions.myaction": ActionInfo("My Action", icon: "star"),
+   ```
+
+2. **Word not splitting?** Add it to [`CommonWords.swift`](Sources/SwiftShortcuts/Internal/CommonWords.swift):
+   ```swift
+   "myword",
+   ```
+
+3. **Missing icon pattern?** Add a fallback in [`WorkflowAction.swift`](Sources/SwiftShortcuts/Internal/WorkflowAction.swift):
+   ```swift
+   if identifier.contains("myword") { return "star" }
+   ```
+
+### New Features
+
+Have an idea? Open an issue or submit a PR.
 
 
 ## License
