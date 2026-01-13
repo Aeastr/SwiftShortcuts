@@ -128,7 +128,15 @@ struct ShortcutService: Sendable {
             guard let identifier = dict["WFWorkflowActionIdentifier"] as? String else {
                 return nil
             }
-            return WorkflowAction(identifier: identifier)
+
+            // Extract control flow mode if present
+            var controlFlowMode: WorkflowAction.ControlFlowMode?
+            if let params = dict["WFWorkflowActionParameters"] as? [String: Any],
+               let modeValue = params["WFControlFlowMode"] as? Int {
+                controlFlowMode = WorkflowAction.ControlFlowMode(rawValue: modeValue)
+            }
+
+            return WorkflowAction(identifier: identifier, controlFlowMode: controlFlowMode)
         }
     }
 

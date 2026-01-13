@@ -9,15 +9,53 @@ import Foundation
 public struct WorkflowAction: Identifiable, Sendable {
     public let id: UUID
     public let identifier: String
+    public let controlFlowMode: ControlFlowMode?
 
-    public init(id: UUID = UUID(), identifier: String) {
+    /// Control flow mode for conditional/loop actions.
+    public enum ControlFlowMode: Int, Sendable {
+        case start = 0      // If, Repeat, Choose from Menu
+        case middle = 1     // Otherwise, Next item
+        case end = 2        // End If, End Repeat, End Menu
+    }
+
+    public init(id: UUID = UUID(), identifier: String, controlFlowMode: ControlFlowMode? = nil) {
         self.id = id
         self.identifier = identifier
+        self.controlFlowMode = controlFlowMode
+    }
+
+    /// Whether this is a control flow marker (Otherwise, End If, etc.)
+    public var isControlFlowMarker: Bool {
+        guard let mode = controlFlowMode else { return false }
+        return mode == .middle || mode == .end
     }
 
     /// Human-readable name for the action.
     public var displayName: String {
-        // Check known actions first
+        // Handle control flow modes specially
+        if let mode = controlFlowMode {
+            switch (identifier, mode) {
+            case ("is.workflow.actions.conditional", .start):
+                return "If"
+            case ("is.workflow.actions.conditional", .middle):
+                return "Otherwise"
+            case ("is.workflow.actions.conditional", .end):
+                return "End If"
+            case ("is.workflow.actions.choosefrommenu", .start):
+                return "Menu"
+            case ("is.workflow.actions.choosefrommenu", .middle):
+                return "Menu Item"
+            case ("is.workflow.actions.choosefrommenu", .end):
+                return "End Menu"
+            case ("is.workflow.actions.repeat.count", .end),
+                 ("is.workflow.actions.repeat.each", .end):
+                return "End Repeat"
+            default:
+                break
+            }
+        }
+
+        // Check known actions
         if let known = Self.actionNames[identifier] {
             return known
         }
@@ -137,22 +175,51 @@ public struct WorkflowAction: Identifiable, Sendable {
     ]
 
     private static func formatActionName(_ name: String) -> String {
-        // Convert camelCase/lowercase to Title Case
-        var result = ""
-        var previousWasLower = false
+        let lowercased = name.lowercased()
 
-        for char in name {
-            if char.isUppercase && previousWasLower {
-                result += " "
-            }
-            if result.isEmpty {
-                result += char.uppercased()
-            } else {
-                result += String(char)
-            }
-            previousWasLower = char.isLowercase
+        // Try to split on known words
+        var result = lowercased
+
+        // Common action words to split on (order matters - longer words first)
+        let knownWords = [
+            "upcoming", "calendar", "events", "event",
+            "clipboard", "notification", "notifications",
+            "variable", "variables",
+            "shortcut", "shortcuts",
+            "message", "messages",
+            "photo", "photos",
+            "document", "documents",
+            "file", "files",
+            "folder", "folders",
+            "note", "notes",
+            "reminder", "reminders",
+            "contact", "contacts",
+            "music", "podcast",
+            "weather", "location",
+            "health", "workout",
+            "home", "device",
+            "text", "number", "date", "time", "url",
+            "list", "dictionary", "item", "items",
+            "input", "output", "result",
+            "filter", "find", "search", "match",
+            "create", "add", "set", "get", "show", "open", "run",
+            "save", "delete", "remove", "update", "edit",
+            "start", "stop", "toggle", "wait", "repeat",
+            "content", "contents", "page", "web", "app", "apps",
+            "script", "shell", "ssh",
+            "alert", "menu", "action", "share", "sharing", "extension",
+        ]
+
+        for word in knownWords {
+            result = result.replacingOccurrences(
+                of: word,
+                with: " \(word) ",
+                options: .caseInsensitive
+            )
         }
 
-        return result
+        // Clean up: collapse multiple spaces, trim, capitalize each word
+        let words = result.split(separator: " ").map { String($0) }
+        return words.map { $0.capitalized }.joined(separator: " ")
     }
 }
