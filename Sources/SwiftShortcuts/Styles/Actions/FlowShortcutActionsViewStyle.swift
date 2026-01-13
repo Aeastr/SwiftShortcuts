@@ -218,6 +218,6 @@ extension ShortcutActionsViewStyle where Self == FlowShortcutActionsViewStyle {
     ScrollView{
         ShortcutActionsView(url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f")
             .shortcutActionsViewStyle(.flow)
+            .padding()
     }
-        .padding()
 }

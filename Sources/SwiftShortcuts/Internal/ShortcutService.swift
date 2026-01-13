@@ -191,14 +191,37 @@ struct ShortcutService: Sendable {
 
         // Conditionals use the condition mappings
         if identifier == "is.workflow.actions.conditional", controlFlowMode == .start {
-            let condition = params["WFCondition"] as? Int ?? 4
+            let condition: Int
+            if let c = params["WFCondition"] as? Int {
+                condition = c
+            } else if let c = params["WFCondition"] as? Int64 {
+                condition = Int(c)
+            } else {
+                condition = 100 // default: has any value
+            }
+
+            // Extract input name (e.g., "Notes", "Upcoming Events")
+            var inputName: String?
+            if let input = params["WFInput"] as? [String: Any],
+               let variable = input["Variable"] as? [String: Any],
+               let value = variable["Value"] as? [String: Any],
+               let name = value["OutputName"] as? String {
+                inputName = name
+            }
+
             if let format = conditionMappings[condition] {
+                var result = format
                 if format.contains("%@") {
                     let value = extractValue(from: params, keys: ["WFConditionalActionString", "WFNumberValue"])
-                    return format.replacingOccurrences(of: "%@", with: value ?? "?")
+                    result = format.replacingOccurrences(of: "%@", with: value ?? "?")
                 }
-                return format
+                // Prepend input name if available
+                if let name = inputName {
+                    return "\(name) \(result)"
+                }
+                return result
             }
+            return "condition #\(condition)"
         }
 
         // Use subtitleKey from mappings if available

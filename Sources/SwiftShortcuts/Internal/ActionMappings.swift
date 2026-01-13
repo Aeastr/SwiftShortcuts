@@ -119,15 +119,44 @@ let actionMappings: [String: ActionInfo] = [
 
 /// Maps WFCondition values to display format.
 /// The %@ placeholder is replaced with the comparison value.
+///
+/// Reference: Discovered by inspecting actual shortcut plist data
+///
+/// Conditional parameters structure:
+/// ```
+/// WFCondition: Int           - Condition type (see below)
+/// WFControlFlowMode: Int     - 0=start, 1=otherwise, 2=end
+/// GroupingIdentifier: String - Links If/Otherwise/End If together
+/// WFInput: {                 - The variable being tested
+///     Type: "Variable"
+///     Variable: {
+///         Value: {
+///             OutputName: "Notes"        <- Display name we extract
+///             OutputUUID: "..."
+///             Type: "ActionOutput"
+///         }
+///         WFSerializationType: "WFTextTokenAttachment"
+///     }
+/// }
+/// WFConditionalActionString: String  - Comparison value (for contains, equals, etc.)
+/// WFNumberValue: Number              - Comparison value (for numeric conditions)
+/// ```
 let conditionMappings: [Int: String] = [
-    0:   "= %@",           // equals
-    1:   "contains %@",    // contains
-    2:   "begins with %@", // begins with
-    3:   "ends with %@",   // ends with
-    4:   "has any value",  // has any value (no placeholder)
-    5:   "has no value",   // does not have any value
-    100: "> %@",           // greater than
-    101: ">= %@",          // greater or equal
-    102: "< %@",           // less than
-    103: "<= %@",          // less or equal
+    // Text/String conditions (0-99)
+    0:   "is %@",                   // is (equals)
+    1:   "is not %@",               // is not
+    2:   "contains %@",             // contains
+    3:   "does not contain %@",     // does not contain
+    4:   "begins with %@",          // begins with
+    5:   "ends with %@",            // ends with
+
+    // Existence conditions (100-101)
+    100: "has any value",           // has any value
+    101: "does not have any value", // does not have any value
+
+    // Numeric conditions (200+?)
+    200: "is greater than %@",
+    201: "is greater than or equal to %@",
+    202: "is less than %@",
+    203: "is less than or equal to %@",
 ]
