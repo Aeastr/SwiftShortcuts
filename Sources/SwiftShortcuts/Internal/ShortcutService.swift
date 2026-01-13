@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import Foundation
 
 // MARK: - API Response Structures
 
@@ -15,13 +16,14 @@ struct CloudKitResponse: Codable {
         let name: ValueWrapper<String>
         let icon_color: ValueWrapper<Int64>
         let icon_glyph: ValueWrapper<Int64>
-        let icon: IconAsset?
+        let icon: AssetField?
+        let shortcut: AssetField?
 
         struct ValueWrapper<T: Codable>: Codable {
             let value: T
         }
 
-        struct IconAsset: Codable {
+        struct AssetField: Codable {
             let value: AssetValue
 
             struct AssetValue: Codable {
@@ -39,6 +41,7 @@ struct ShortcutData: Sendable {
     let iconColor: Int64
     let iconGlyph: Int64
     let iconURL: String?
+    let shortcutURL: String?
     let iCloudLink: String
 
     var gradient: LinearGradient {
@@ -77,6 +80,7 @@ struct ShortcutService: Sendable {
             iconColor: cloudKitResponse.fields.icon_color.value,
             iconGlyph: cloudKitResponse.fields.icon_glyph.value,
             iconURL: cloudKitResponse.fields.icon?.value.downloadURL,
+            shortcutURL: constructAssetURL(cloudKitResponse.fields.shortcut?.value.downloadURL),
             iCloudLink: normalizeShortcutURL(iCloudLink)
         )
     }
@@ -101,6 +105,33 @@ struct ShortcutService: Sendable {
         return nil
     }
 
+    func fetchWorkflowActions(from urlString: String) async throws -> [WorkflowAction] {
+        guard let url = URL(string: urlString) else {
+            throw URLError(.badURL)
+        }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+
+        guard let plist = try PropertyListSerialization.propertyList(
+            from: data,
+            options: [],
+            format: nil
+        ) as? [String: Any] else {
+            throw URLError(.cannotParseResponse)
+        }
+
+        guard let actions = plist["WFWorkflowActions"] as? [[String: Any]] else {
+            return []
+        }
+
+        return actions.compactMap { dict -> WorkflowAction? in
+            guard let identifier = dict["WFWorkflowActionIdentifier"] as? String else {
+                return nil
+            }
+            return WorkflowAction(identifier: identifier)
+        }
+    }
+
     private func extractShortcutID(from link: String) -> String? {
         guard let url = URL(string: link) else { return nil }
         let path = url.path
@@ -119,5 +150,11 @@ struct ShortcutService: Sendable {
             }
         }
         return link
+    }
+
+    /// Constructs a usable asset URL by replacing the ${f} placeholder.
+    private func constructAssetURL(_ templateURL: String?) -> String? {
+        guard let templateURL else { return nil }
+        return templateURL.replacingOccurrences(of: "${f}", with: "shortcut.plist")
     }
 }
