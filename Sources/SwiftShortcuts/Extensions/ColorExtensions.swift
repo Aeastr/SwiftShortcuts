@@ -200,7 +200,10 @@ public enum ShortcutGradient {
 // MARK: - Internal Color Mapping
 
 /// Maps Apple Shortcuts icon color codes to gradient colors
-enum ShortcutColors {
+public enum ShortcutColors {
+    /// Whether gradients adapt to dark mode. Default is `true`.
+    /// Set to `false` to always use light mode colors.
+    nonisolated(unsafe) public static var adaptsToDarkMode: Bool = true
     static let colorMap: [Int64: ShortcutGradientColors] = [
         4282601983: ShortcutColorPalette.red,           // Red
         12365313: ShortcutColorPalette.red,             // Red (alt)
@@ -229,14 +232,26 @@ enum ShortcutColors {
     ]
 
     static func gradient(for iconColor: Int64) -> LinearGradient {
-        let normalizedColor = abs(iconColor)
+        // Convert negative values to unsigned 32-bit equivalent
+        // e.g., -615917313 → 3679049983 (lightPurple)
+        let normalizedColor: Int64 = iconColor < 0
+            ? Int64(UInt32(bitPattern: Int32(truncatingIfNeeded: iconColor)))
+            : iconColor
 
         guard let colors = colorMap[normalizedColor] else {
             return LinearGradient(colors: [.gray], startPoint: .bottom, endPoint: .top)
         }
 
-        let topColor = Color(light: colors.lightTop, dark: colors.darkTop)
-        let bottomColor = Color(light: colors.lightBottom, dark: colors.darkBottom)
+        let topColor: Color
+        let bottomColor: Color
+
+        if adaptsToDarkMode {
+            topColor = Color(light: colors.lightTop, dark: colors.darkTop)
+            bottomColor = Color(light: colors.lightBottom, dark: colors.darkBottom)
+        } else {
+            topColor = colors.lightTop
+            bottomColor = colors.lightBottom
+        }
 
         return LinearGradient(
             colors: [bottomColor, topColor],

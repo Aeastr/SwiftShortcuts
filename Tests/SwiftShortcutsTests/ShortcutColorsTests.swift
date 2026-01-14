@@ -55,11 +55,17 @@ struct ShortcutColorsTests {
         _ = gradient
     }
 
-    @Test("Handles negative color codes by using absolute value")
+    @Test("Handles negative color codes by converting to unsigned 32-bit")
     func negativeColorCode() {
-        // Negative of blue (463140863) should still map correctly
-        let gradient = ShortcutColors.gradient(for: -463140863)
+        // -615917313 as signed Int32 = 3679049983 as unsigned (lightPurple)
+        // This should NOT fall back to gray
+        let gradient = ShortcutColors.gradient(for: -615917313)
         _ = gradient
+
+        // Verify the conversion: -615917313 → 3679049983 (lightPurple is in colorMap)
+        let converted = Int64(UInt32(bitPattern: Int32(truncatingIfNeeded: -615917313)))
+        #expect(converted == 3679049983)
+        #expect(ShortcutColors.colorMap[converted] != nil)
     }
 
     @Test("Color map contains expected number of entries")

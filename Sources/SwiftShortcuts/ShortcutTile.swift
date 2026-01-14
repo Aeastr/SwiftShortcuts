@@ -31,26 +31,26 @@ public struct ShortcutTile: View {
     @Environment(\.shortcutTileStyle) private var style
     @Environment(\.shortcutLoadingStagger) private var stagger
     @Environment(\.openURL) private var openURL
-
+    
     // Source of data
     private enum DataSource: Sendable {
         case url(String)
         case preloaded(data: ShortcutData)
     }
-
+    
     private let dataSource: DataSource
     private let action: ((_ url: String, _ data: ShortcutData?) -> Void)?
-
+    
     private static func iCloudURL(for id: String) -> String {
         "https://www.icloud.com/shortcuts/\(id)"
     }
-
+    
     // State for URL-based loading
     @State private var loadedData: ShortcutData?
     @State private var isLoading = false
-
+    
     // MARK: - URL-based Initializers
-
+    
     /// Creates a shortcut tile that automatically fetches metadata from an iCloud share URL.
     ///
     /// - Parameters:
@@ -60,7 +60,7 @@ public struct ShortcutTile: View {
         self.dataSource = .url(url)
         self.action = action
     }
-
+    
     /// Creates a shortcut tile that automatically fetches metadata using a shortcut ID.
     ///
     /// - Parameters:
@@ -70,9 +70,9 @@ public struct ShortcutTile: View {
         self.dataSource = .url(Self.iCloudURL(for: id))
         self.action = action
     }
-
+    
     // MARK: - Data-based Initializer
-
+    
     /// Creates a shortcut tile with pre-loaded data. No fetching will occur.
     ///
     /// Use this initializer when you already have the shortcut data (e.g., from a parent view
@@ -88,12 +88,12 @@ public struct ShortcutTile: View {
         self.dataSource = .preloaded(data: data)
         self.action = action
     }
-
+    
     // MARK: - Body
-
+    
     public var body: some View {
         let configuration = makeConfiguration()
-
+        
         Button {
             performAction(with: configuration)
         } label: {
@@ -104,9 +104,9 @@ public struct ShortcutTile: View {
             await loadDataIfNeeded()
         }
     }
-
+    
     // MARK: - Private Helpers
-
+    
     private func makeConfiguration() -> ShortcutTileStyleConfiguration {
         switch dataSource {
         case .url(let url):
@@ -118,7 +118,7 @@ public struct ShortcutTile: View {
                 isLoading: isLoading,
                 url: url
             )
-
+            
         case .preloaded(let data):
             return ShortcutTileStyleConfiguration(
                 name: data.name,
@@ -130,7 +130,7 @@ public struct ShortcutTile: View {
             )
         }
     }
-
+    
     private func performAction(with configuration: ShortcutTileStyleConfiguration) {
         if let action {
             let data: ShortcutData? = switch dataSource {
@@ -144,7 +144,7 @@ public struct ShortcutTile: View {
             openShortcut(url: configuration.url)
         }
     }
-
+    
     private func openShortcut(url urlString: String) {
         guard let url = URL(string: urlString),
               !url.lastPathComponent.isEmpty,
@@ -153,28 +153,28 @@ public struct ShortcutTile: View {
         }
         openURL(shortcutsURL)
     }
-
+    
     private func loadDataIfNeeded() async {
         // Only load for URL-based data source
         guard case .url(let url) = dataSource else { return }
-
+        
         isLoading = true
         defer { isLoading = false }
-
+        
         // Stagger requests when displaying multiple tiles
         if let stagger {
             try? await Task.sleep(nanoseconds: UInt64.random(in: stagger))
         }
-
+        
         do {
             var data = try await ShortcutService.shared.fetchMetadata(from: url)
-
+            
             // Load image if available and add it to data
             if let iconURL = data.iconURL {
                 let image = await ShortcutService.shared.fetchImage(from: iconURL)
                 data = data.with(image: image)
             }
-
+            
             loadedData = data
         } catch {
             print("Failed to fetch shortcut metadata: \(error)")
@@ -216,10 +216,10 @@ extension View {
     /// ```
     public func shortcutLoadingStagger(_ range: ClosedRange<Double>) -> some View {
         environment(\.shortcutLoadingStagger,
-            UInt64(range.lowerBound * 1_000_000_000)...UInt64(range.upperBound * 1_000_000_000)
+                     UInt64(range.lowerBound * 1_000_000_000)...UInt64(range.upperBound * 1_000_000_000)
         )
     }
-
+    
     /// Disables stagger delay for shortcut tile loading.
     ///
     /// ```swift
@@ -234,9 +234,17 @@ extension View {
 // MARK: - Previews
 
 #Preview("URL-based") {
-    ShortcutTile(url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f")
-        .frame(width: 160, height: 110)
-        .padding()
+    VStack(spacing: 20){
+        ShortcutTile(url: "https://www.icloud.com/shortcuts/3435d2b245664ba69836eef52b9f77f6")
+            .frame(width: 160, height: 110)
+        
+        ShortcutTile(url: "https://www.icloud.com/shortcuts/84f1334ff16640698a3e6fc83a77dcf0")
+            .frame(width: 160, height: 110)
+        
+        ShortcutTile(url: "https://www.icloud.com/shortcuts/1a3aa10b6d794eacb1aecf677f560d01")
+            .frame(width: 160, height: 110)
+    }
+    .padding()
 }
 
 #Preview("ID-based") {

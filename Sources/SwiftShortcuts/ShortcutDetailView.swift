@@ -239,7 +239,7 @@ public struct ShortcutDetailView: View {
 // MARK: - Previews
 
 #Preview("Detail View") {
-    ShortcutDetailView(id: "1c54c02d29b7447e82c67d247b6dc697")
+    ShortcutDetailView(id: "6256bc4845dd46d6b04b3e9fdd2ad83d")
 }
 
 #if os(iOS)
@@ -248,7 +248,7 @@ public struct ShortcutDetailView: View {
     @Previewable @Namespace var namespace
     @Previewable @State var selectedData: ShortcutData?
 
-    ShortcutTile(id: "1c54c02d29b7447e82c67d247b6dc697") { url, data in
+    ShortcutTile(id: "6256bc4845dd46d6b04b3e9fdd2ad83d") { url, data in
         selectedData = data
     }
     .matchedTransitionSource(id: "shortcutTile", in: namespace)

@@ -119,10 +119,7 @@ extension ShortcutActionsViewStyle where Self == FlowShortcutActionsViewStyle {
 
 #Preview("Block Style") {
     ScrollView {
-        ShortcutActionsView(url: "https://www.icloud.com/shortcuts/fdc7508d385b4755a00e9b394cf52ae1")
-            .padding()
-        
-        ShortcutActionsView(url: "https://www.icloud.com/shortcuts/81e9938dabdc447094e03b09fc008d31")
+        ShortcutActionsView(url: "https://www.icloud.com/shortcuts/6256bc4845dd46d6b04b3e9fdd2ad83d")
             .padding()
     }
 }
