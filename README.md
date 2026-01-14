@@ -297,6 +297,29 @@ The `ShortcutData` struct holds all fetched shortcut metadata:
 
 Conforms to `Identifiable` for use with `.sheet(item:)` and similar APIs.
 
+#### Loading from JSON/Swift
+
+`ShortcutData` can be loaded from JSON files or embedded as Swift code. Use the included CLI tool to fetch shortcut data ahead of time:
+
+```bash
+# Output as JSON
+swift run sstools fetch abc123 def456 -o shortcuts.json
+
+# Output as Swift code
+swift run sstools fetch abc123 def456 --swift -o Shortcuts.swift
+```
+
+Then load in your app:
+
+```swift
+// From JSON
+let shortcuts = try ShortcutData.load(resource: "shortcuts")
+
+// Or use generated Swift code directly - no parsing needed
+```
+
+See [docs/CLI.md](docs/CLI.md) for full CLI documentation.
+
 
 ## How It Works
 
@@ -314,7 +337,7 @@ The response contains:
 - `icon_glyph` - SF Symbol glyph identifier
 - `icon` - Custom icon image URL (if set)
 
-See [Docs/iCloud-API.md](Docs/iCloud-API.md) for full response structure and color code mappings.
+See [docs/iCloud-API.md](docs/iCloud-API.md) for full response structure and color code mappings.
 
 ### Icon Glyphs
 
@@ -327,7 +350,7 @@ Apple stores shortcut icons as Int64 glyph IDs in the `icon_glyph` field. These 
 | 61699 | `append.page.fill` |
 | ... | ... |
 
-We extracted 836 mappings from Apple's private frameworks. See [Docs/IconGlyph-Research.md](Docs/IconGlyph-Research.md) for details.
+We extracted 836 mappings from Apple's private frameworks. See [docs/IconGlyph-Research.md](docs/IconGlyph-Research.md) for details.
 
 **How ShortcutTile uses glyphs:**
 
@@ -339,9 +362,9 @@ ShortcutTile fetches the glyph ID and resolves it to an SF Symbol. This is the p
 
 Custom tile styles receive both `glyphSymbol` and `icon` in the configuration and can choose how to use them.
 
-**Regenerating mappings** (macOS only):
+**Regenerating mappings** (macOS only) - see [docs/CLI.md](docs/CLI.md):
 ```bash
-swift run dump-glyphs > Sources/SwiftShortcuts/Mappings/GlyphMappings.generated.swift
+swift run sstools dump-glyphs > Sources/SwiftShortcuts/Mappings/GlyphMappings.generated.swift
 ```
 
 ### Color Mapping
@@ -406,11 +429,7 @@ Apple Shortcuts has hundreds of actions. We can't map them all ourselves! If you
 
 ### Glyph Mappings
 
-If you notice a shortcut icon not rendering correctly, the glyph ID might be missing from our mappings. On macOS, you can regenerate:
-
-```bash
-swift run dump-glyphs > Sources/SwiftShortcuts/Mappings/GlyphMappings.generated.swift
-```
+If you notice a shortcut icon not rendering correctly, the glyph ID might be missing from our mappings. On macOS, regenerate with the CLI tool - see [docs/CLI.md](docs/CLI.md).
 
 ### New Features
 
