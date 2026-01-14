@@ -42,10 +42,17 @@ extension ShortcutActionsViewStyle {
     @MainActor @ViewBuilder
     public func makeHeader(configuration: ShortcutActionsViewStyleConfiguration) -> some View {
         HStack {
-            if let gradient = configuration.gradient {
+            ZStack {
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(gradient)
+                    .fill(configuration.gradient ?? LinearGradient(colors: [.gray], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .frame(width: 24, height: 24)
+
+                if let icon = configuration.icon {
+                    icon
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 16, height: 16)
+                }
             }
 
             Text(configuration.shortcutName)
@@ -114,6 +121,9 @@ public struct ShortcutActionsViewStyleConfiguration: Sendable {
     /// The shortcut's display name.
     public let shortcutName: String
 
+    /// The shortcut's custom icon (if set).
+    public let icon: Image?
+
     /// The workflow actions in order.
     public let actions: [WorkflowAction]
 
@@ -125,11 +135,13 @@ public struct ShortcutActionsViewStyleConfiguration: Sendable {
 
     public init(
         shortcutName: String,
+        icon: Image? = nil,
         actions: [WorkflowAction],
         gradient: LinearGradient?,
         isLoading: Bool
     ) {
         self.shortcutName = shortcutName
+        self.icon = icon
         self.actions = actions
         self.gradient = gradient
         self.isLoading = isLoading

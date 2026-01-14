@@ -243,15 +243,24 @@ struct ShortcutService: Sendable {
             }
         }
 
-        // Fallback: try ANY key that has a useful string value
+        // Fallback: try ANY key that has a useful value
         // Skip technical/internal keys
         let skipKeys: Set<String> = [
             "UUID", "GroupingIdentifier", "WFControlFlowMode",
             "WFSerializationType", "FollowUp"
         ]
 
-        for (key, _) in params.sorted(by: { $0.key < $1.key }) {
-            if skipKeys.contains(key) { continue }
+        let keys = params.keys.filter { !skipKeys.contains($0) }.sorted()
+
+        // First pass: prefer direct strings (most readable)
+        for key in keys {
+            if let str = params[key] as? String, !str.isEmpty {
+                return formatSubtitle(str)
+            }
+        }
+
+        // Second pass: try nested structures
+        for key in keys {
             if let value = extractValue(from: params, keys: [key]) {
                 return value
             }
@@ -267,11 +276,14 @@ struct ShortcutService: Sendable {
             if let str = params[key] as? String, !str.isEmpty {
                 return formatSubtitle(str)
             }
-            // Number
+            // Number (skip 0/1 as they're usually boolean flags)
             if let num = params[key] as? NSNumber {
-                return "\(num)"
+                let intValue = num.intValue
+                if intValue != 0 && intValue != 1 {
+                    return "\(num)"
+                }
             }
-            // Serialized token
+            // Serialized token (WFTextTokenString)
             if let dict = params[key] as? [String: Any],
                let text = dict["Value"] as? [String: Any],
                let string = text["string"] as? String,

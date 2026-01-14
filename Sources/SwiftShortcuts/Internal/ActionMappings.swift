@@ -115,6 +115,7 @@ let actionMappings: [String: ActionInfo] = [
     // └─────────────────────────────────────────────────────────────────────────┘
     "is.workflow.actions.runshellscript": ActionInfo("Run Shell Script", icon: "terminal"),
     "is.workflow.actions.runsshscript":   ActionInfo("Run Script over SSH", icon: "terminal"),
+    "is.workflow.actions.runworkflow":    ActionInfo("Run Shortcut", icon: "play.fill", subtitle: "WFWorkflowName"),
 
     // ┌─────────────────────────────────────────────────────────────────────────┐
     // │ APPLE INTELLIGENCE                                                       │

@@ -19,6 +19,7 @@ public struct ShortcutActionsView: View {
     private let url: String
 
     @State private var shortcutData: ShortcutData?
+    @State private var loadedIcon: Image?
     @State private var actions: [WorkflowAction] = []
     @State private var isLoading = false
 
@@ -32,6 +33,7 @@ public struct ShortcutActionsView: View {
     public var body: some View {
         let configuration = ShortcutActionsViewStyleConfiguration(
             shortcutName: shortcutData?.name ?? "",
+            icon: loadedIcon,
             actions: actions,
             gradient: shortcutData?.gradient,
             isLoading: isLoading
@@ -54,6 +56,11 @@ public struct ShortcutActionsView: View {
             // Fetch metadata first
             let data = try await ShortcutService.shared.fetchMetadata(from: url)
             shortcutData = data
+
+            // Load custom icon if available
+            if let iconURL = data.iconURL {
+                loadedIcon = await ShortcutService.shared.fetchIcon(from: iconURL)
+            }
 
             // Then fetch actions from the shortcut asset
             if let shortcutURL = data.shortcutURL {
