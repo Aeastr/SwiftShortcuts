@@ -32,14 +32,24 @@ public struct ShortcutDetailView: View {
     // Source of data
     private enum DataSource {
         case url(String)
-        case preloaded(data: ShortcutData, actions: [WorkflowAction])
+        case partial(data: ShortcutData)  // Has metadata, needs actions
+        case complete(data: ShortcutData, actions: [WorkflowAction])  // All data provided
     }
 
     private let dataSource: DataSource
 
     @State private var shortcutData: ShortcutData?
-    @State private var actions: [WorkflowAction] = []
+    @State private var fetchedActions: [WorkflowAction] = []
     @State private var isLoading = false
+
+    private var effectiveActions: [WorkflowAction] {
+        switch dataSource {
+        case .url, .partial:
+            return fetchedActions
+        case .complete(_, let actions):
+            return actions
+        }
+    }
 
     // MARK: - URL-based Initializers
 
@@ -57,20 +67,29 @@ public struct ShortcutDetailView: View {
         self.dataSource = .url("https://www.icloud.com/shortcuts/\(id)")
     }
 
-    // MARK: - Pre-loaded Initializer
+    // MARK: - Pre-loaded Initializers
 
-    /// Creates a shortcut detail view with pre-loaded data. No fetching will occur.
+    /// Creates a shortcut detail view with pre-loaded metadata. Fetches actions only.
+    ///
+    /// Use this when you already have the shortcut data from a tile tap.
+    ///
+    /// - Parameter data: The pre-loaded shortcut data
+    public init(data: ShortcutData) {
+        self.dataSource = .partial(data: data)
+        self._shortcutData = State(initialValue: data)
+    }
+
+    /// Creates a shortcut detail view with fully pre-loaded data. No fetching will occur.
     ///
     /// Use this when you already have all the data to avoid redundant API calls.
-    /// The icon should be included in the data.
     ///
     /// - Parameters:
-    ///   - data: The pre-loaded shortcut data (including icon)
+    ///   - data: The pre-loaded shortcut data
     ///   - actions: The pre-loaded workflow actions
-    public init(data: ShortcutData, actions: [WorkflowAction] = []) {
-        self.dataSource = .preloaded(data: data, actions: actions)
+    public init(data: ShortcutData, actions: [WorkflowAction]) {
+        self.dataSource = .complete(data: data, actions: actions)
         self._shortcutData = State(initialValue: data)
-        self._actions = State(initialValue: actions)
+        self._fetchedActions = State(initialValue: actions)
     }
 
     // MARK: - Body
@@ -86,9 +105,14 @@ public struct ShortcutDetailView: View {
                             .frame(maxWidth: 180)
                             .disabled(true)
 
-                        ShortcutActionsView(data: data, actions: actions)
-                            .shortcutActionsViewStyle(.flow)
-                            .padding()
+                        if isLoading {
+                            ProgressView()
+                                .padding(.top, 40)
+                        } else {
+                            ShortcutActionsView(data: data, actions: effectiveActions)
+                                .shortcutActionsViewStyle(.flow)
+                                .padding()
+                        }
                     }
                 } else {
                     // Loading state
@@ -149,9 +173,21 @@ public struct ShortcutDetailView: View {
     // MARK: - Private Methods
 
     private func loadDataIfNeeded() async {
-        // Only load for URL-based data source
-        guard case .url(let url) = dataSource else { return }
+        switch dataSource {
+        case .url(let url):
+            await loadEverything(from: url)
 
+        case .partial(let data):
+            // Only fetch actions, we already have metadata
+            await loadActionsOnly(shortcutURL: data.shortcutURL)
+
+        case .complete:
+            // Everything is pre-loaded, nothing to do
+            break
+        }
+    }
+
+    private func loadEverything(from url: String) async {
         isLoading = true
         defer { isLoading = false }
 
@@ -169,10 +205,23 @@ public struct ShortcutDetailView: View {
 
             // Fetch actions
             if let shortcutURL = data.shortcutURL {
-                actions = try await ShortcutService.shared.fetchWorkflowActions(from: shortcutURL)
+                fetchedActions = try await ShortcutService.shared.fetchWorkflowActions(from: shortcutURL)
             }
         } catch {
             print("Failed to fetch shortcut data: \(error)")
+        }
+    }
+
+    private func loadActionsOnly(shortcutURL: String?) async {
+        guard let shortcutURL else { return }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            fetchedActions = try await ShortcutService.shared.fetchWorkflowActions(from: shortcutURL)
+        } catch {
+            print("Failed to fetch workflow actions: \(error)")
         }
     }
 
