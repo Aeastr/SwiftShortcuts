@@ -291,7 +291,7 @@ Contributions welcome! Some easy ways to help:
 
 Apple Shortcuts has hundreds of actions. We can't map them all ourselves! If you see an action displaying incorrectly:
 
-1. **Wrong name?** Add it to [`ActionMappings.swift`](Sources/SwiftShortcuts/Internal/ActionMappings.swift):
+1. **Wrong name?** Add it to [`ActionMappings.swift`](Sources/SwiftShortcuts/Mappings/ActionMappings.swift):
    ```swift
    "is.workflow.actions.myaction": ActionInfo("My Action", icon: "star"),
    ```
