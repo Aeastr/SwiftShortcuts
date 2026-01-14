@@ -20,7 +20,8 @@
 
 - **URL-based cards** - Provide an iCloud share URL and metadata is fetched automatically
 - **Manual cards** - Specify name, icon, and gradient for full control
-- **Two styles** - Default card layout or compact list style
+- **Actions view** - Display the workflow steps inside a shortcut
+- **Multiple styles** - Flow visualization, list view, or create your own
 - **15 gradients** - Apple Shortcuts color palette built-in
 - **Tap to open** - Cards open shortcuts directly in the Shortcuts app
 
@@ -131,10 +132,54 @@ ShortcutGradient.pink
 // + darkOrange, lightBlue, darkBlue, lightPurple, gray, greenGray, brown
 ```
 
+### Viewing Shortcut Actions (Experimental)
+
+Display the workflow steps inside a shortcut:
+
+```swift
+ShortcutActionsView(url: "https://www.icloud.com/shortcuts/abc123")
+```
+
+> **Note:** Action name and icon mappings are incomplete. Some actions may display raw identifiers or generic icons. [Contributions welcome!](#action-mappings)
+
+The default style shows a flow visualization with indentation for control flow (If/Otherwise/Repeat). Use the list style for a simpler numbered view:
+
+```swift
+ShortcutActionsView(url: "https://www.icloud.com/shortcuts/abc123")
+    .shortcutActionsViewStyle(.list)
+```
+
+### Custom Actions Styles
+
+Create your own style by conforming to `ShortcutActionsViewStyle`:
+
+```swift
+struct MyActionsStyle: ShortcutActionsViewStyle {
+    func makeBody(configuration: ShortcutActionsViewStyleConfiguration) -> some View {
+        VStack {
+            Text(configuration.shortcutName)
+                .font(.headline)
+
+            ForEach(configuration.actions) { action in
+                Label(action.displayName, systemImage: action.systemImage)
+            }
+        }
+    }
+}
+
+// Usage
+ShortcutActionsView(url: "...")
+    .shortcutActionsViewStyle(MyActionsStyle())
+```
+
+The protocol provides default implementations for `makeHeader`, `makeNode`, `makeLoadingState`, and `makeEmptyState` that you can use as building blocks or override.
+
 
 ## Overview
 
-`ShortcutCard` supports two data modes:
+### ShortcutCard
+
+Displays a shortcut as a tappable card. Supports two data modes:
 
 1. **URL-based**: Extracts the shortcut ID from the iCloud URL and fetches metadata automatically. Icons load asynchronously with staggered requests to avoid rate limiting.
 
@@ -142,9 +187,19 @@ ShortcutGradient.pink
 
 Tapping a card opens the shortcut in the Shortcuts app via the `shortcuts://` URL scheme.
 
-Built-in styles:
+Built-in card styles:
 - `DefaultShortcutCardStyle` - 1.5 aspect ratio card with centered icon and name
 - `CompactShortcutCardStyle` - Horizontal row with icon, name, and material background
+
+### ShortcutActionsView (Experimental)
+
+Displays the workflow actions/steps inside a shortcut. Fetches the shortcut's plist data and parses the action list.
+
+Built-in actions styles:
+- `FlowShortcutActionsViewStyle` - Flow visualization with connectors and control flow indentation (default)
+- `ListShortcutActionsViewStyle` - Simple numbered list
+
+Apple Shortcuts has hundreds of actions - we can't map them all. Unknown actions fall back to parsing the identifier and showing a generic icon. See [Contributing](#action-mappings) to help expand coverage.
 
 
 ## How It Works
