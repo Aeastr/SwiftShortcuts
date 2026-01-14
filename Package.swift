@@ -20,6 +20,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/Aeastr/Conditionals.git", .upToNextMajor(from: "1.2.1")),
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
     ],
     targets: [
         .target(
@@ -30,8 +31,11 @@ let package = Package(
             exclude: ["Extensions/ColorExtensions.md"]
         ),
         .executableTarget(
-            name: "dump-glyphs",
-            path: "Sources/dump-glyphs"
+            name: "sstools",
+            dependencies: [
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            path: "Sources/sstools"
         ),
     ]
 )
