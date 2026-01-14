@@ -61,7 +61,7 @@ RoundedRectangle(cornerRadius: 8)
 For custom UI where you want to use Shortcuts-style colors directly:
 
 ```swift
-ShortcutCard(name: "My Shortcut", systemImage: "star", url: "...")
+ShortcutTile(name: "My Shortcut", systemImage: "star", url: "...")
     .foregroundStyle(ShortcutGradient.blue)
 ```
 

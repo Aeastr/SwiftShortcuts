@@ -1,10 +1,10 @@
 # Getting Started
 
-Add shortcut cards to your SwiftUI app.
+Add shortcut tiles to your SwiftUI app.
 
 ## Overview
 
-SwiftShortcuts displays Apple Shortcuts as tappable cards. You can either provide an iCloud share URL for automatic metadata fetching, or specify the details manually.
+SwiftShortcuts displays Apple Shortcuts as tappable tiles. You can either provide an iCloud share URL for automatic metadata fetching, or specify the details manually.
 
 ## Installation
 
@@ -22,22 +22,22 @@ Then import it:
 import SwiftShortcuts
 ```
 
-## URL-Based Cards
+## URL-Based Tiles
 
-Provide an iCloud share URL and the card fetches metadata automatically:
+Provide an iCloud share URL and the tile fetches metadata automatically:
 
 ```swift
-ShortcutCard(url: "https://www.icloud.com/shortcuts/abc123")
+ShortcutTile(url: "https://www.icloud.com/shortcuts/abc123")
 ```
 
-The card extracts the shortcut ID from the URL, fetches the name, icon, and gradient from iCloud, then displays them. Tapping opens the shortcut in the Shortcuts app.
+The tile extracts the shortcut ID from the URL, fetches the name, icon, and gradient from iCloud, then displays them. Tapping opens the shortcut in the Shortcuts app.
 
-## Manual Cards
+## Manual Tiles
 
 Specify the details yourself for full control:
 
 ```swift
-ShortcutCard(name: "Morning Routine", systemImage: "sun.horizon.fill", url: "...")
+ShortcutTile(name: "Morning Routine", systemImage: "sun.horizon.fill", url: "...")
     .foregroundStyle(ShortcutGradient.orange)
 ```
 
@@ -49,29 +49,41 @@ Apply the compact style for list layouts:
 
 ```swift
 VStack {
-    ShortcutCard(name: "Quick Note", systemImage: "note.text", url: "...")
-    ShortcutCard(name: "Start Timer", systemImage: "timer", url: "...")
+    ShortcutTile(name: "Quick Note", systemImage: "note.text", url: "...")
+    ShortcutTile(name: "Start Timer", systemImage: "timer", url: "...")
 }
-.shortcutCardStyle(.compact)
+.shortcutTileStyle(.compact)
 ```
 
 ## Custom Styles
 
-Create your own styles by conforming to ``ShortcutCardStyle``:
+Create your own styles by conforming to ``ShortcutTileStyle``:
 
 ```swift
-struct MyCardStyle: ShortcutCardStyle {
-    func makeBody(configuration: ShortcutCardStyleConfiguration) -> some View {
+struct MyTileStyle: ShortcutTileStyle {
+    func makeBody(configuration: ShortcutTileStyleConfiguration) -> some View {
         VStack {
             if let icon = configuration.icon {
                 icon.resizable().frame(width: 60, height: 60)
             }
             Text(configuration.name)
         }
+        .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
         .padding()
         .background(configuration.gradient ?? ShortcutGradient.gray)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
+}
+```
+
+## Custom Tap Actions
+
+Override the default tap behavior by passing an action closure:
+
+```swift
+ShortcutTile(id: "abc123") { url in
+    // Custom action instead of opening shortcuts app
+    print("Tapped: \(url)")
 }
 ```
 

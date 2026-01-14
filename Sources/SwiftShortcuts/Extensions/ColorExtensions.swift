@@ -166,7 +166,7 @@ enum ShortcutColorPalette {
 /// Pre-defined gradients matching Apple Shortcuts colors.
 /// Use with `.foregroundStyle()`:
 /// ```swift
-/// ShortcutCard(name: "My Shortcut", systemImage: "star", url: "...")
+/// ShortcutTile(name: "My Shortcut", systemImage: "star", url: "...")
 ///     .foregroundStyle(ShortcutGradient.blue)
 /// ```
 public enum ShortcutGradient {

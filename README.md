@@ -18,13 +18,15 @@
 
 ## Features
 
-- **ID-based cards** - Provide a shortcut ID and metadata is fetched automatically
-- **URL-based cards** - Provide an iCloud share URL and metadata is fetched automatically
-- **Manual cards** - Specify name, icon, and gradient for full control
+- **ID-based tiles** - Provide a shortcut ID and metadata is fetched automatically
+- **URL-based tiles** - Provide an iCloud share URL and metadata is fetched automatically
+- **Manual tiles** - Specify name, icon, and gradient for full control
+- **Custom tap actions** - Override default behavior with action closure
+- **Press feedback** - Built-in scale/opacity animations via ButtonStyle
 - **Actions view** - Display the workflow steps inside a shortcut
 - **Multiple styles** - Flow visualization, list view, or create your own
 - **15 gradients** - Apple Shortcuts color palette built-in
-- **Tap to open** - Cards open shortcuts directly in the Shortcuts app
+- **Tap to open** - Tiles open shortcuts directly in the Shortcuts app
 
 
 ## Requirements
@@ -50,22 +52,22 @@ import SwiftShortcuts
 
 ### ID-based
 
-Provide a shortcut ID and the card fetches all metadata automatically:
+Provide a shortcut ID and the tile fetches all metadata automatically:
 
 ```swift
-ShortcutCard(id: "f00836becd2845109809720d2a70e32f")
+ShortcutTile(id: "f00836becd2845109809720d2a70e32f")
 ```
 
 <div align="center">
-  <img src="/Resources/examples/cards.png" alt="Cards" width="600">
+  <img src="/Resources/examples/cards.png" alt="Tiles" width="600">
 </div>
 
 ### URL-based
 
-Provide an iCloud share URL and the card fetches all metadata automatically:
+Provide an iCloud share URL and the tile fetches all metadata automatically:
 
 ```swift
-ShortcutCard(url: "https://www.icloud.com/shortcuts/abc123")
+ShortcutTile(url: "https://www.icloud.com/shortcuts/abc123")
 ```
 
 ### Manual
@@ -73,8 +75,18 @@ ShortcutCard(url: "https://www.icloud.com/shortcuts/abc123")
 Specify details yourself, use `.foregroundStyle()` for the gradient:
 
 ```swift
-ShortcutCard(name: "Morning Routine", systemImage: "sun.horizon.fill", url: "https://...")
+ShortcutTile(name: "Morning Routine", systemImage: "sun.horizon.fill", url: "https://...")
     .foregroundStyle(ShortcutGradient.orange)
+```
+
+### Custom Tap Actions
+
+Override the default tap behavior (opening in Shortcuts app):
+
+```swift
+ShortcutTile(id: "abc123") { url in
+    showDetailView(for: url)
+}
 ```
 
 ### Shortcut Actions (Experimental)
@@ -126,28 +138,28 @@ The protocol provides default implementations for `makeHeader`, `makeNode`, `mak
 
 ## Customization
 
-### Card Styles
+### Tile Styles
 
 Apply the compact style for list layouts:
 
 ```swift
 VStack {
-    ShortcutCard(name: "Quick Note", systemImage: "note.text", url: "...")
+    ShortcutTile(name: "Quick Note", systemImage: "note.text", url: "...")
         .foregroundStyle(ShortcutGradient.blue)
 
-    ShortcutCard(name: "Start Timer", systemImage: "timer", url: "...")
+    ShortcutTile(name: "Start Timer", systemImage: "timer", url: "...")
         .foregroundStyle(ShortcutGradient.green)
 }
-.shortcutCardStyle(.compact)
+.shortcutTileStyle(.compact)
 ```
 
-### Custom Card Styles
+### Custom Tile Styles
 
-Create your own styles by conforming to `ShortcutCardStyle`:
+Create your own styles by conforming to `ShortcutTileStyle`. Styles receive `isPressed` for custom press feedback:
 
 ```swift
-struct MyCardStyle: ShortcutCardStyle {
-    func makeBody(configuration: ShortcutCardStyleConfiguration) -> some View {
+struct MyTileStyle: ShortcutTileStyle {
+    func makeBody(configuration: ShortcutTileStyleConfiguration) -> some View {
         VStack {
             if let icon = configuration.icon {
                 icon
@@ -160,31 +172,35 @@ struct MyCardStyle: ShortcutCardStyle {
         .padding()
         .background(configuration.gradient ?? ShortcutGradient.gray)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        // Custom press feedback
+        .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+        .opacity(configuration.isPressed ? 0.8 : 1.0)
+        .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
 // Usage
-ShortcutCard(url: "...")
-    .shortcutCardStyle(MyCardStyle())
+ShortcutTile(url: "...")
+    .shortcutTileStyle(MyTileStyle())
 ```
 
 ### Loading Stagger
 
-When displaying multiple cards, each card waits a random delay before fetching metadata to avoid overwhelming the API. Configure this with `.shortcutLoadingStagger()`:
+When displaying multiple tiles, each tile waits a random delay before fetching metadata to avoid overwhelming the API. Configure this with `.shortcutLoadingStagger()`:
 
 ```swift
 // Faster loading with smaller stagger (0.01-0.05 seconds)
-ShortcutCard(id: "abc123")
+ShortcutTile(id: "abc123")
     .shortcutLoadingStagger(0.01...0.05)
 
 // Disable staggering entirely for immediate loading
-ShortcutCard(id: "abc123")
+ShortcutTile(id: "abc123")
     .shortcutLoadingStagger(.disabled)
 
-// Apply to multiple cards
+// Apply to multiple tiles
 VStack {
-    ShortcutCard(id: "abc123")
-    ShortcutCard(id: "def456")
+    ShortcutTile(id: "abc123")
+    ShortcutTile(id: "def456")
 }
 .shortcutLoadingStagger(0.1...0.3)
 ```
@@ -208,9 +224,9 @@ ShortcutGradient.pink
 
 ## Overview
 
-### ShortcutCard
+### ShortcutTile
 
-Displays a shortcut as a tappable card. Supports three data modes:
+Displays a shortcut as a tappable tile. Supports three data modes:
 
 1. **ID-based**: Takes a shortcut ID directly and fetches metadata automatically.
 
@@ -218,13 +234,13 @@ Displays a shortcut as a tappable card. Supports three data modes:
 
 3. **Manual**: Uses the provided name and icon directly. The gradient comes from SwiftUI's `.foregroundStyle()` environment value.
 
-ID-based and URL-based cards load asynchronously with configurable staggered requests (see [Loading Stagger](#loading-stagger)).
+ID-based and URL-based tiles load asynchronously with configurable staggered requests (see [Loading Stagger](#loading-stagger)).
 
-Tapping a card opens the shortcut in the Shortcuts app via the `shortcuts://` URL scheme.
+Tapping a tile opens the shortcut in the Shortcuts app via the `shortcuts://` URL scheme by default. Pass an action closure to override this behavior.
 
-Built-in card styles:
-- `DefaultShortcutCardStyle` - 1.5 aspect ratio card with centered icon and name
-- `CompactShortcutCardStyle` - Horizontal row with icon, name, and material background
+Built-in tile styles:
+- `DefaultShortcutTileStyle` - 1.5 aspect ratio tile with centered icon and name
+- `CompactShortcutTileStyle` - Horizontal row with icon, name, and material background
 
 ### ShortcutActionsView (Experimental)
 
@@ -268,15 +284,15 @@ Apple stores shortcut icons as Int64 glyph IDs in the `icon_glyph` field. These 
 
 We extracted 836 mappings from Apple's private frameworks. See [Docs/IconGlyph-Research.md](Docs/IconGlyph-Research.md) for details.
 
-**How ShortcutCard uses glyphs:**
+**How ShortcutTile uses glyphs:**
 
-When you use the URL-based initializer, ShortcutCard fetches the glyph ID and resolves it to an SF Symbol. This is the primary icon source:
+When you use the URL-based initializer, ShortcutTile fetches the glyph ID and resolves it to an SF Symbol. This is the primary icon source:
 
 1. **Glyph mapping** → SF Symbol from `icon_glyph` (primary)
 2. **API image** → Falls back to `icon` URL if glyph unmapped
 3. **None** → Shows gradient only if neither available
 
-For manual cards, you provide the icon directly via `systemImage:` or `image:`.
+For manual tiles, you provide the icon directly via `systemImage:` or `image:`.
 
 **Regenerating mappings** (macOS only):
 ```bash
@@ -311,7 +327,7 @@ Colors are computed from Apple's original hex values and adapt automatically to 
 
 ### URL Scheme
 
-Tapping a card constructs and opens:
+Tapping a tile constructs and opens:
 
 ```
 shortcuts://open-shortcut?id={shortcut-id}

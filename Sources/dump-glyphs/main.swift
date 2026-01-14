@@ -7,7 +7,7 @@
 //  Usage:
 //    swift run dump-glyphs > Sources/SwiftShortcuts/Internal/GlyphMappings.generated.swift
 //
-
+#if canImport(AppKit)
 import Foundation
 import AppKit
 
@@ -99,3 +99,4 @@ print("""
 
 // swiftlint:enable file_length
 """)
+#endif
