@@ -8,6 +8,9 @@ import SwiftUI
 // MARK: - Style Protocol
 
 /// Protocol for defining the visual style of the shortcut actions view.
+///
+/// Only `makeBody` is required. The other methods have default implementations
+/// that you can override for customization, or use as building blocks in your own `makeBody`.
 public protocol ShortcutActionsViewStyle: Sendable {
     associatedtype Body: View
     associatedtype HeaderBody: View
@@ -15,23 +18,23 @@ public protocol ShortcutActionsViewStyle: Sendable {
     associatedtype LoadingBody: View
     associatedtype EmptyBody: View
 
-    /// Creates the main container view.
+    /// Creates the main container view. **(Required)**
     @MainActor @ViewBuilder
     func makeBody(configuration: ShortcutActionsViewStyleConfiguration) -> Body
 
-    /// Creates the header showing shortcut name and action count.
+    /// Creates the header showing shortcut name and action count. *(Has default)*
     @MainActor @ViewBuilder
     func makeHeader(configuration: ShortcutActionsViewStyleConfiguration) -> HeaderBody
 
-    /// Creates a single action node.
+    /// Creates a single action node. *(Has default)*
     @MainActor @ViewBuilder
     func makeNode(action: WorkflowAction, gradient: LinearGradient?) -> NodeBody
 
-    /// Creates the loading state view.
+    /// Creates the loading state view. *(Has default)*
     @MainActor @ViewBuilder
     func makeLoadingState() -> LoadingBody
 
-    /// Creates the empty state view.
+    /// Creates the empty state view. *(Has default)*
     @MainActor @ViewBuilder
     func makeEmptyState() -> EmptyBody
 }
@@ -151,7 +154,7 @@ public struct ShortcutActionsViewStyleConfiguration: Sendable {
 // MARK: - Environment Key
 
 private struct ShortcutActionsViewStyleKey: EnvironmentKey {
-    static let defaultValue: any ShortcutActionsViewStyle = DefaultShortcutActionsViewStyle()
+    static let defaultValue: any ShortcutActionsViewStyle = FlowShortcutActionsViewStyle()
 }
 
 extension EnvironmentValues {
@@ -170,5 +173,62 @@ extension View {
     /// - Returns: A view with the style applied
     public func shortcutActionsViewStyle(_ style: some ShortcutActionsViewStyle) -> some View {
         environment(\.shortcutActionsViewStyle, style)
+    }
+}
+
+// MARK: - Previews
+
+#Preview("Default Components") {
+    let sampleActions = [
+        WorkflowAction(identifier: "is.workflow.actions.gettext", subtitle: "Hello World"),
+        WorkflowAction(identifier: "is.workflow.actions.showresult"),
+    ]
+
+    let config = ShortcutActionsViewStyleConfiguration(
+        shortcutName: "Sample Shortcut",
+        actions: sampleActions,
+        gradient: ShortcutGradient.blue,
+        isLoading: false
+    )
+
+    ScrollView {
+        VStack(alignment: .leading, spacing: 20) {
+            // Header
+            GroupBox("makeHeader") {
+                ListShortcutActionsViewStyle()
+                    .makeHeader(configuration: config)
+            }
+
+            // Nodes
+            GroupBox("makeNode") {
+                VStack(spacing: 0) {
+                    ForEach(sampleActions) { action in
+                        ListShortcutActionsViewStyle()
+                            .makeNode(action: action, gradient: ShortcutGradient.blue)
+                        Divider()
+                    }
+                }
+            }
+
+            // Loading
+            GroupBox("makeLoadingState") {
+                ListShortcutActionsViewStyle()
+                    .makeLoadingState()
+            }
+
+            // Empty
+            GroupBox("makeEmptyState") {
+                ListShortcutActionsViewStyle()
+                    .makeEmptyState()
+            }
+        }
+        .padding()
+    }
+}
+
+#Preview("Live Fetch") {
+    ScrollView {
+        ShortcutActionsView(url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f")
+            .padding()
     }
 }

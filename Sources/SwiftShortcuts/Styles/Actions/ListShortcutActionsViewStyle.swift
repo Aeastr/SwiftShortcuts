@@ -1,12 +1,12 @@
 //
-//  DefaultShortcutActionsViewStyle.swift
+//  ListShortcutActionsViewStyle.swift
 //  SwiftShortcuts
 //
 
 import SwiftUI
 
-/// The default style for displaying shortcut actions as a vertical list.
-public struct DefaultShortcutActionsViewStyle: ShortcutActionsViewStyle {
+/// A simple list style for displaying shortcut actions as numbered rows.
+public struct ListShortcutActionsViewStyle: ShortcutActionsViewStyle {
     public init() {}
 
     @MainActor
@@ -46,16 +46,17 @@ public struct DefaultShortcutActionsViewStyle: ShortcutActionsViewStyle {
 
 // MARK: - Style Extension
 
-extension ShortcutActionsViewStyle where Self == DefaultShortcutActionsViewStyle {
-    /// The default actions view style showing a vertical list.
-    public static var `default`: DefaultShortcutActionsViewStyle { DefaultShortcutActionsViewStyle() }
+extension ShortcutActionsViewStyle where Self == ListShortcutActionsViewStyle {
+    /// A simple list style showing numbered action rows.
+    public static var list: ListShortcutActionsViewStyle { ListShortcutActionsViewStyle() }
 }
 
 // MARK: - Preview
 
-#Preview("Default Style") {
+#Preview("List Style") {
     ScrollView {
         ShortcutActionsView(url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f")
+            .shortcutActionsViewStyle(.list)
             .padding()
     }
 }
