@@ -2,7 +2,7 @@
   <img width="128" height="128" src="/resources/icon/icon.png" alt="SwiftShortcuts Icon">
   <h1><b>SwiftShortcuts</b></h1>
   <p>
-    Display Apple Shortcuts galleries in SwiftUI apps.
+    Display Shortcuts in SwiftUI apps.
   </p>
 </div>
 
