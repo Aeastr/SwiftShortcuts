@@ -23,12 +23,12 @@ import Foundation
 struct ActionInfo {
     let name: String
     let icon: String
-    let subtitleKey: String?  // Parameter key to use as subtitle
+    let subtitleKeys: [String]  // Parameter keys to use as subtitle (joined)
 
-    init(_ name: String, icon: String, subtitle: String? = nil) {
+    init(_ name: String, icon: String, subtitle: String...) {
         self.name = name
         self.icon = icon
-        self.subtitleKey = subtitle
+        self.subtitleKeys = subtitle
     }
 }
 
@@ -115,6 +115,11 @@ let actionMappings: [String: ActionInfo] = [
     // └─────────────────────────────────────────────────────────────────────────┘
     "is.workflow.actions.runshellscript": ActionInfo("Run Shell Script", icon: "terminal"),
     "is.workflow.actions.runsshscript":   ActionInfo("Run Script over SSH", icon: "terminal"),
+
+    // ┌─────────────────────────────────────────────────────────────────────────┐
+    // │ APPLE INTELLIGENCE                                                       │
+    // └─────────────────────────────────────────────────────────────────────────┘
+    "is.workflow.actions.askllm": ActionInfo("Apple Intelligence", icon: "apple.intelligence", subtitle: "WFLLMModel", "WFLLMPrompt"),
 
     // ┌─────────────────────────────────────────────────────────────────────────┐
     // │ CONTENT                                                                  │

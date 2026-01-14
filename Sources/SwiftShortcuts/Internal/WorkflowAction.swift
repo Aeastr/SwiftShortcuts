@@ -34,6 +34,7 @@ public struct WorkflowAction: Identifiable, Sendable {
 
     /// Human-readable name for the action.
     public var displayName: String {
+
         // Handle control flow modes specially
         if let mode = controlFlowMode {
             switch (identifier, mode) {
@@ -71,6 +72,8 @@ public struct WorkflowAction: Identifiable, Sendable {
         }
 
         // Fallback based on identifier patterns
+        if identifier.contains("llm") || identifier.contains("intelligence") { return "sparkles" }
+        if identifier.contains("delete") { return "trash" }
         if identifier.contains("transcribe") { return "waveform" }
         if identifier.contains("record") { return "mic" }
         if identifier.contains("audio") { return "waveform" }

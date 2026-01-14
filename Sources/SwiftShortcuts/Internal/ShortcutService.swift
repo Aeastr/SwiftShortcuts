@@ -131,6 +131,17 @@ struct ShortcutService: Sendable {
 
             let params = dict["WFWorkflowActionParameters"] as? [String: Any]
 
+            // DEBUG: print all actions with their params
+            let isMapped = actionMappings[identifier] != nil
+            print("\(isMapped ? "✓" : "📍") \(identifier)")
+            if let params {
+                print("   Keys: \(params.keys.sorted())")
+                for (key, value) in params.sorted(by: { $0.key < $1.key }) {
+                    print("   \(key): \(value)")
+                }
+            }
+            print("")
+
             // Extract control flow mode if present
             var controlFlowMode: WorkflowAction.ControlFlowMode?
             if let modeValue = params?["WFControlFlowMode"] as? Int {
@@ -224,9 +235,26 @@ struct ShortcutService: Sendable {
             return "condition #\(condition)"
         }
 
-        // Use subtitleKey from mappings if available
-        if let info = actionMappings[identifier], let key = info.subtitleKey {
-            return extractValue(from: params, keys: [key])
+        // Use subtitleKeys from mappings if available (join multiple values)
+        if let info = actionMappings[identifier], !info.subtitleKeys.isEmpty {
+            let values = info.subtitleKeys.compactMap { extractValue(from: params, keys: [$0]) }
+            if !values.isEmpty {
+                return values.joined(separator: " · ")
+            }
+        }
+
+        // Fallback: try ANY key that has a useful string value
+        // Skip technical/internal keys
+        let skipKeys: Set<String> = [
+            "UUID", "GroupingIdentifier", "WFControlFlowMode",
+            "WFSerializationType", "FollowUp"
+        ]
+
+        for (key, _) in params.sorted(by: { $0.key < $1.key }) {
+            if skipKeys.contains(key) { continue }
+            if let value = extractValue(from: params, keys: [key]) {
+                return value
+            }
         }
 
         return nil
