@@ -13,9 +13,14 @@ public struct DefaultShortcutCardStyle: ShortcutCardStyle {
     public func makeBody(configuration: ShortcutCardStyleConfiguration) -> some View {
         CardButton(configuration: configuration) {
             VStack(alignment: .leading, spacing: 5) {
-                // Icon in top-left
+                // Icon in top-left (glyph is main, custom image is fallback)
                 Group {
-                    if let icon = configuration.icon {
+                    if let glyphSymbol = configuration.glyphSymbol {
+                        Image(systemName: glyphSymbol)
+                            .resizable()
+                            .scaledToFit()
+                            .foregroundColor(.white)
+                    } else if let icon = configuration.icon {
                         icon
                             .resizable()
                             .scaledToFit()
@@ -69,28 +74,16 @@ extension ShortcutCardStyle where Self == DefaultShortcutCardStyle {
 
 #Preview("Default Style") {
     VStack(spacing: 20) {
-        ShortcutCard(
-            name: "Morning Routine",
-            systemImage: "sun.horizon.fill",
-            url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f"
+        ShortcutCard(url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f"
         )
-        .foregroundStyle(ShortcutGradient.orange)
         .frame(width: 160, height: 110)
 
-        ShortcutCard(
-            name: "Quick Note",
-            systemImage: "note.text",
-            url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f"
+        ShortcutCard(url: "https://www.icloud.com/shortcuts/59c0216a670f4b98ae36e092aab87cdf"
         )
-        .foregroundStyle(ShortcutGradient.blue)
         .frame(width: 160, height: 110)
 
-        ShortcutCard(
-            name: "Start Timer",
-            systemImage: "timer",
-            url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f"
+        ShortcutCard(url: "https://www.icloud.com/shortcuts/ab1317716ca7490b8536134367b7ba39"
         )
-        .foregroundStyle(ShortcutGradient.green)
         .frame(width: 160, height: 110)
     }
     .padding()

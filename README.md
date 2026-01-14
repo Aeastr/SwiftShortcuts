@@ -218,6 +218,24 @@ The response contains:
 
 See [Docs/iCloud-API.md](Docs/iCloud-API.md) for full response structure and color code mappings.
 
+### Icon Glyphs
+
+Apple stores shortcut icons as Int64 glyph IDs. These map to SF Symbols:
+
+| Glyph ID | SF Symbol |
+|----------|-----------|
+| 59446 | `keyboard.fill` |
+| 61512 | `timer` |
+| 61699 | `append.page.fill` |
+| ... | ... |
+
+We extracted 836 mappings from Apple's private frameworks. See [Docs/IconGlyph-Research.md](Docs/IconGlyph-Research.md) for details.
+
+**Regenerating mappings** (macOS only):
+```bash
+swift run dump-glyphs > Sources/SwiftShortcuts/Internal/GlyphMappings.generated.swift
+```
+
 ### Color Mapping
 
 Apple stores shortcut colors as Int64 codes. These are mapped to SwiftUI gradients:
@@ -277,6 +295,14 @@ Apple Shortcuts has hundreds of actions. We can't map them all ourselves! If you
    ```swift
    if identifier.contains("myword") { return "star" }
    ```
+
+### Glyph Mappings
+
+If you notice a shortcut icon not rendering correctly, the glyph ID might be missing from our mappings. On macOS, you can regenerate:
+
+```bash
+swift run dump-glyphs > Sources/SwiftShortcuts/Internal/GlyphMappings.generated.swift
+```
 
 ### New Features
 

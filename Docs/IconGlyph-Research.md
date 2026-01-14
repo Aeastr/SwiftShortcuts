@@ -153,7 +153,7 @@ let symbol = GlyphMappings.symbol(for: iconGlyph, default: "questionmark")
 
 **Regenerating mappings** (requires macOS with Shortcuts.app):
 ```bash
-swift Scripts/DumpGlyphMappings.swift > Sources/SwiftShortcuts/Internal/GlyphMappings.generated.swift
+swift run dump-glyphs > Sources/SwiftShortcuts/Internal/GlyphMappings.generated.swift
 ```
 
 ## Open Questions
@@ -178,8 +178,8 @@ All scripts are in `Scripts/` directory:
 
 Usage:
 ```bash
-# Generate all mappings (main use case)
-swift Scripts/DumpGlyphMappings.swift > Sources/SwiftShortcuts/Internal/GlyphMappings.generated.swift
+# Generate all mappings (main use case) - CLI tool
+swift run dump-glyphs > Sources/SwiftShortcuts/Internal/GlyphMappings.generated.swift
 
 # Inspect a single glyph
 swift Scripts/InspectGlyph.swift 59446

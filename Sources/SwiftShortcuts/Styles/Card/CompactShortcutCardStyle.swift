@@ -13,9 +13,22 @@ public struct CompactShortcutCardStyle: ShortcutCardStyle {
     public func makeBody(configuration: ShortcutCardStyleConfiguration) -> some View {
         CardButton(configuration: configuration) {
             HStack(spacing: 12) {
-                // Icon
+                // Icon (glyph is main, custom image is fallback)
                 Group {
-                    if let icon = configuration.icon {
+                    if let glyphSymbol = configuration.glyphSymbol {
+                        Image(systemName: glyphSymbol)
+                            .resizable()
+                            .scaledToFit()
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .background {
+                                if let gradient = configuration.gradient {
+                                    RoundedRectangle(cornerRadius: 8).fill(gradient)
+                                } else {
+                                    RoundedRectangle(cornerRadius: 8).fill(.primary)
+                                }
+                            }
+                    } else if let icon = configuration.icon {
                         icon
                             .resizable()
                             .scaledToFit()
@@ -89,7 +102,6 @@ extension ShortcutCardStyle where Self == CompactShortcutCardStyle {
             systemImage: "music.note",
             url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f"
         )
-        .foregroundStyle(ShortcutGradient.pink)
         .shortcutCardStyle(.compact)
     }
     .padding()

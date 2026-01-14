@@ -23,8 +23,11 @@ public struct ShortcutCardStyleConfiguration: Sendable {
     /// The shortcut's display name
     public let name: String
 
-    /// The shortcut's icon image (if available)
+    /// The shortcut's icon image (custom icon, if available)
     public let icon: Image?
+
+    /// The SF Symbol name for the shortcut's glyph icon
+    public let glyphSymbol: String?
 
     /// The shortcut's background gradient (nil = use `.foregroundStyle()` from environment)
     public let gradient: LinearGradient?

@@ -23,5 +23,9 @@ let package = Package(
             name: "SwiftShortcuts",
             exclude: ["Internal/ColorExtensions.md"]
         ),
+        .executableTarget(
+            name: "dump-glyphs",
+            path: "Sources/dump-glyphs"
+        ),
     ]
 )

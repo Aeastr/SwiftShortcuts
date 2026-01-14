@@ -27,7 +27,7 @@ public struct ShortcutCard: View {
     // Source of data
     private enum DataSource: Sendable {
         case url(String)
-        case manual(name: String, icon: Image?, url: String)
+        case manual(name: String, icon: Image?, glyphSymbol: String?, url: String)
     }
 
     private let dataSource: DataSource
@@ -65,7 +65,7 @@ public struct ShortcutCard: View {
         image: Image? = nil,
         url: String
     ) {
-        self.dataSource = .manual(name: name, icon: image, url: url)
+        self.dataSource = .manual(name: name, icon: image, glyphSymbol: nil, url: url)
     }
 
     /// Creates a shortcut card with a system image icon.
@@ -85,7 +85,7 @@ public struct ShortcutCard: View {
         systemImage: String,
         url: String
     ) {
-        self.dataSource = .manual(name: name, icon: Image(systemName: systemImage), url: url)
+        self.dataSource = .manual(name: name, icon: nil, glyphSymbol: systemImage, url: url)
     }
 
     // MARK: - Body
@@ -106,15 +106,17 @@ public struct ShortcutCard: View {
             return ShortcutCardStyleConfiguration(
                 name: loadedData?.name ?? "",
                 icon: loadedIcon,
+                glyphSymbol: loadedData?.glyphSymbol,
                 gradient: loadedData?.gradient,
                 isLoading: isLoading,
                 url: url
             )
 
-        case .manual(let name, let icon, let url):
+        case .manual(let name, let icon, let glyphSymbol, let url):
             return ShortcutCardStyleConfiguration(
                 name: name,
                 icon: icon,
+                glyphSymbol: glyphSymbol,
                 gradient: nil,  // Uses .foregroundStyle() from environment
                 isLoading: false,
                 url: url
@@ -168,7 +170,7 @@ extension View {
 #Preview("Manual") {
     ShortcutCard(
         name: "My Shortcut",
-        systemImage: "star.fill",
+        image: Image(systemName: "star.fill"),
         url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f"
     )
     .foregroundStyle(ShortcutGradient.blue)

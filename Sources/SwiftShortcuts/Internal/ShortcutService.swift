@@ -48,10 +48,9 @@ struct ShortcutData: Sendable {
         ShortcutColors.gradient(for: iconColor)
     }
 
-    /// The glyph as a Unicode character (Private Use Area)
-    var glyphCharacter: Character? {
-        guard let scalar = Unicode.Scalar(UInt32(iconGlyph)) else { return nil }
-        return Character(scalar)
+    /// The SF Symbol name for this shortcut's glyph
+    var glyphSymbol: String? {
+        GlyphMappings.symbol(for: iconGlyph)
     }
 }
 
