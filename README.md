@@ -56,6 +56,10 @@ Provide a shortcut ID and the card fetches all metadata automatically:
 ShortcutCard(id: "f00836becd2845109809720d2a70e32f")
 ```
 
+<div align="center">
+  <img src="/Resources/examples/cards.png" alt="Cards" width="600">
+</div>
+
 ### URL-based
 
 Provide an iCloud share URL and the card fetches all metadata automatically:
@@ -63,10 +67,6 @@ Provide an iCloud share URL and the card fetches all metadata automatically:
 ```swift
 ShortcutCard(url: "https://www.icloud.com/shortcuts/abc123")
 ```
-
-<div align="center">
-  <img src="/Resources/examples/cards.png" alt="Cards" width="600">
-</div>
 
 ### Manual
 
@@ -77,9 +77,56 @@ ShortcutCard(name: "Morning Routine", systemImage: "sun.horizon.fill", url: "htt
     .foregroundStyle(ShortcutGradient.orange)
 ```
 
+### Shortcut Actions (Experimental)
+
+Display the workflow steps inside a shortcut:
+
+```swift
+ShortcutActionsView(url: "https://www.icloud.com/shortcuts/abc123")
+```
+
+<div align="center">
+  <img src="/Resources/examples/actions-view.png" alt="Actions view" width="600">
+</div>
+
+> **Note:** Action name and icon mappings are incomplete. Some actions may display raw identifiers or generic icons. [Contributions welcome!](#action-mappings)
+
+The default style shows a flow visualization with indentation for control flow (If/Otherwise/Repeat). Use the list style for a simpler numbered view:
+
+```swift
+ShortcutActionsView(url: "https://www.icloud.com/shortcuts/abc123")
+    .shortcutActionsViewStyle(.list)
+```
+
+### Custom Actions Styles
+
+Create your own style by conforming to `ShortcutActionsViewStyle`:
+
+```swift
+struct MyActionsStyle: ShortcutActionsViewStyle {
+    func makeBody(configuration: ShortcutActionsViewStyleConfiguration) -> some View {
+        VStack {
+            Text(configuration.shortcutName)
+                .font(.headline)
+
+            ForEach(configuration.actions) { action in
+                Label(action.displayName, systemImage: action.systemImage)
+            }
+        }
+    }
+}
+
+// Usage
+ShortcutActionsView(url: "...")
+    .shortcutActionsViewStyle(MyActionsStyle())
+```
+
+The protocol provides default implementations for `makeHeader`, `makeNode`, `makeLoadingState`, and `makeEmptyState` that you can use as building blocks or override.
 
 
-### Styling
+## Customization
+
+### Card Styles
 
 Apply the compact style for list layouts:
 
@@ -94,7 +141,7 @@ VStack {
 .shortcutCardStyle(.compact)
 ```
 
-### Custom Styles
+### Custom Card Styles
 
 Create your own styles by conforming to `ShortcutCardStyle`:
 
@@ -144,7 +191,7 @@ VStack {
 
 Default stagger range is `0.05...0.2` seconds.
 
-### Available Gradients
+### Gradients
 
 ```swift
 ShortcutGradient.red
@@ -157,52 +204,6 @@ ShortcutGradient.purple
 ShortcutGradient.pink
 // + darkOrange, lightBlue, darkBlue, lightPurple, gray, greenGray, brown
 ```
-
-### Viewing Shortcut Actions (Experimental)
-
-Display the workflow steps inside a shortcut:
-
-```swift
-ShortcutActionsView(url: "https://www.icloud.com/shortcuts/abc123")
-```
-
-<div align="center">
-  <img src="/Resources/examples/actions-view.png" alt="Actions view" width="600">
-</div>
-
-> **Note:** Action name and icon mappings are incomplete. Some actions may display raw identifiers or generic icons. [Contributions welcome!](#action-mappings)
-
-The default style shows a flow visualization with indentation for control flow (If/Otherwise/Repeat). Use the list style for a simpler numbered view:
-
-```swift
-ShortcutActionsView(url: "https://www.icloud.com/shortcuts/abc123")
-    .shortcutActionsViewStyle(.list)
-```
-
-### Custom Actions Styles
-
-Create your own style by conforming to `ShortcutActionsViewStyle`:
-
-```swift
-struct MyActionsStyle: ShortcutActionsViewStyle {
-    func makeBody(configuration: ShortcutActionsViewStyleConfiguration) -> some View {
-        VStack {
-            Text(configuration.shortcutName)
-                .font(.headline)
-
-            ForEach(configuration.actions) { action in
-                Label(action.displayName, systemImage: action.systemImage)
-            }
-        }
-    }
-}
-
-// Usage
-ShortcutActionsView(url: "...")
-    .shortcutActionsViewStyle(MyActionsStyle())
-```
-
-The protocol provides default implementations for `makeHeader`, `makeNode`, `makeLoadingState`, and `makeEmptyState` that you can use as building blocks or override.
 
 
 ## Overview
