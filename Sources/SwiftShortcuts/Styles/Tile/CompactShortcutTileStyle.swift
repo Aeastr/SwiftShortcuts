@@ -75,36 +75,11 @@ extension ShortcutTileStyle where Self == CompactShortcutTileStyle {
 
 #Preview("Compact Style") {
     VStack(spacing: 12) {
-        ShortcutTile(
-            name: "Morning Routine",
-            systemImage: "sun.horizon.fill",
-            url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f"
-        )
-        .foregroundStyle(ShortcutGradient.orange)
-        .shortcutTileStyle(.compact)
+        ShortcutTile(id: "f00836becd2845109809720d2a70e32f")
+            .shortcutTileStyle(.compact)
 
-        ShortcutTile(
-            name: "Quick Note",
-            systemImage: "note.text",
-            url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f"
-        )
-        .foregroundStyle(ShortcutGradient.blue)
-        .shortcutTileStyle(.compact)
-
-        ShortcutTile(
-            name: "Start Timer",
-            systemImage: "timer",
-            url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f"
-        )
-        .foregroundStyle(ShortcutGradient.green)
-        .shortcutTileStyle(.compact)
-
-        ShortcutTile(
-            name: "Play Music",
-            systemImage: "music.note",
-            url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f"
-        )
-        .shortcutTileStyle(.compact)
+        ShortcutTile(id: "1c54c02d29b7447e82c67d247b6dc697")
+            .shortcutTileStyle(.compact)
     }
     .padding()
 }
