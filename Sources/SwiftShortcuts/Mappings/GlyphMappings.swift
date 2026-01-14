@@ -18,11 +18,13 @@ import Foundation
 enum GlyphMappings {
     /// Returns the SF Symbol name for a glyph ID, or nil if unknown.
     static func symbol(for glyphID: Int64) -> String? {
-        mappings[UInt16(glyphID)]
+        guard glyphID >= 0, glyphID <= Int64(UInt16.max) else { return nil }
+        return mappings[UInt16(glyphID)]
     }
 
     /// Returns the SF Symbol name for a glyph ID, or a fallback symbol.
     static func symbol(for glyphID: Int64, default fallback: String) -> String {
-        mappings[UInt16(glyphID)] ?? fallback
+        guard glyphID >= 0, glyphID <= Int64(UInt16.max) else { return fallback }
+        return mappings[UInt16(glyphID)] ?? fallback
     }
 }

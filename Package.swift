@@ -37,5 +37,9 @@ let package = Package(
             ],
             path: "Sources/sstools"
         ),
+        .testTarget(
+            name: "SwiftShortcutsTests",
+            dependencies: ["SwiftShortcuts"]
+        ),
     ]
 )

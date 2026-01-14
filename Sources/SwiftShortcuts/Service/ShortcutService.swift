@@ -156,6 +156,9 @@ public struct ShortcutData: Sendable, Identifiable, Codable {
 struct ShortcutService: Sendable {
     static let shared = ShortcutService()
 
+    /// Maximum length for action subtitles. Set to `nil` for no limit (default).
+    nonisolated(unsafe) static var maxSubtitleLength: Int? = nil
+
     func fetchMetadata(from iCloudLink: String) async throws -> ShortcutData {
         guard let shortcutID = extractShortcutID(from: iCloudLink) else {
             throw URLError(.badURL)
@@ -202,7 +205,7 @@ struct ShortcutService: Sendable {
             }
 #endif
         } catch {
-            print("Failed to load shortcut image: \(error)")
+            // Image load failed - return nil to fall back to icon/gradient
         }
         return nil
     }
@@ -232,17 +235,6 @@ struct ShortcutService: Sendable {
             }
 
             let params = dict["WFWorkflowActionParameters"] as? [String: Any]
-
-            // DEBUG: print all actions with their params
-            let isMapped = actionMappings[identifier] != nil
-            print("\(isMapped ? "✓" : "📍") \(identifier)")
-            if let params {
-                print("   Keys: \(params.keys.sorted())")
-                for (key, value) in params.sorted(by: { $0.key < $1.key }) {
-                    print("   \(key): \(value)")
-                }
-            }
-            print("")
 
             // Extract control flow mode if present
             var controlFlowMode: WorkflowAction.ControlFlowMode?
@@ -402,7 +394,10 @@ struct ShortcutService: Sendable {
         let cleaned = string.replacingOccurrences(of: "\u{FFFC}", with: "").trimmingCharacters(in: .whitespaces)
         if cleaned.isEmpty { return nil }
 
-        // Truncate long strings
-        return cleaned.count > 40 ? String(cleaned.prefix(40)) + "..." : cleaned
+        // Truncate if maxSubtitleLength is set
+        if let maxLength = ShortcutService.maxSubtitleLength, cleaned.count > maxLength {
+            return String(cleaned.prefix(maxLength)) + "..."
+        }
+        return cleaned
     }
 }
