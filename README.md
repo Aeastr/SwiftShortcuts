@@ -18,6 +18,7 @@
 
 ## Features
 
+- **ID-based cards** - Provide a shortcut ID and metadata is fetched automatically
 - **URL-based cards** - Provide an iCloud share URL and metadata is fetched automatically
 - **Manual cards** - Specify name, icon, and gradient for full control
 - **Actions view** - Display the workflow steps inside a shortcut
@@ -46,6 +47,14 @@ import SwiftShortcuts
 
 
 ## Usage
+
+### ID-based
+
+Provide a shortcut ID and the card fetches all metadata automatically:
+
+```swift
+ShortcutCard(id: "f00836becd2845109809720d2a70e32f")
+```
 
 ### URL-based
 
@@ -177,11 +186,13 @@ The protocol provides default implementations for `makeHeader`, `makeNode`, `mak
 
 ### ShortcutCard
 
-Displays a shortcut as a tappable card. Supports two data modes:
+Displays a shortcut as a tappable card. Supports three data modes:
 
-1. **URL-based**: Extracts the shortcut ID from the iCloud URL and fetches metadata automatically. Icons load asynchronously with staggered requests to avoid rate limiting.
+1. **ID-based**: Takes a shortcut ID directly and fetches metadata automatically. Icons load asynchronously with staggered requests to avoid rate limiting.
 
-2. **Manual**: Uses the provided name and icon directly. The gradient comes from SwiftUI's `.foregroundStyle()` environment value.
+2. **URL-based**: Extracts the shortcut ID from the iCloud URL and fetches metadata automatically.
+
+3. **Manual**: Uses the provided name and icon directly. The gradient comes from SwiftUI's `.foregroundStyle()` environment value.
 
 Tapping a card opens the shortcut in the Shortcuts app via the `shortcuts://` URL scheme.
 
