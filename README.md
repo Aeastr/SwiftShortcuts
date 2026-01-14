@@ -140,6 +140,10 @@ Display the workflow steps inside a shortcut:
 ShortcutActionsView(url: "https://www.icloud.com/shortcuts/abc123")
 ```
 
+<div align="center">
+  <img src="/Resources/examples/actions-view.png" alt="Actions view" width="600">
+</div>
+
 > **Note:** Action name and icon mappings are incomplete. Some actions may display raw identifiers or generic icons. [Contributions welcome!](#action-mappings)
 
 The default style shows a flow visualization with indentation for control flow (If/Otherwise/Repeat). Use the list style for a simpler numbered view:
