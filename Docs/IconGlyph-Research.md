@@ -134,13 +134,34 @@ Tried extracting from `WorkflowKit.framework/Resources/Assets.car`:
 - Would need specialized tools like `acextract` or similar
 - The `ZZZZPackedAsset` entries are small (148x184 etc) - possibly icon packs, not full glyph sprites
 
+## Solution: GlyphMappings
+
+We extracted all 836 glyph ID → SF Symbol mappings into `GlyphMappings.generated.swift`. No private APIs needed at runtime.
+
+**Usage:**
+```swift
+import SwiftUI
+
+// Get SF Symbol name from glyph ID
+if let symbol = GlyphMappings.symbol(for: shortcut.iconGlyph) {
+    Image(systemName: symbol)
+}
+
+// With fallback
+let symbol = GlyphMappings.symbol(for: iconGlyph, default: "questionmark")
+```
+
+**Regenerating mappings** (requires macOS with Shortcuts.app):
+```bash
+swift Scripts/DumpGlyphMappings.swift > Sources/SwiftShortcuts/Internal/GlyphMappings.generated.swift
+```
+
 ## Open Questions
 
 1. How does Apple's web renderer display glyphs without custom icons?
    - Possibly server-side rendering or embedded sprite sheets
 2. ~~Is there a private API to render glyphs by ID?~~ **ANSWERED: Yes, see section 6**
-3. What do different "style" values for `loadIcon:size:style:` do?
-4. Can we use this in a shipping app? (Private API concerns)
+3. ~~Can we use SF Symbols instead of private APIs?~~ **ANSWERED: Yes, see Solution above**
 
 ## Research Scripts
 
@@ -148,17 +169,24 @@ All scripts are in `Scripts/` directory:
 
 | Script | Purpose |
 |--------|---------|
+| `DumpGlyphMappings.swift` | **Extracts all 836 glyph → SF Symbol mappings** |
+| `InspectGlyph.swift` | Shows SF Symbol name for a single glyph ID |
+| `RenderGlyph.swift` | Renders glyph to PNG with background |
 | `ExtractGlyphs.swift` | Tests loading named assets from framework bundles |
-| `InspectWFIcon.swift` | Introspects WFIcon class methods/properties using ObjC runtime |
+| `InspectWFIcon.swift` | Introspects WFIcon class using ObjC runtime |
 | `FindIconSubclasses.swift` | Finds WFIcon subclasses and their initializers |
-| `RenderGlyph.swift` | Renders any glyph ID to PNG with background |
-| `InspectGlyph.swift` | **Shows SF Symbol name for a glyph ID, renders with different styles** |
 
 Usage:
 ```bash
-# Render glyph 59446 (keyboard icon)
-swift Scripts/RenderGlyph.swift 59446
+# Generate all mappings (main use case)
+swift Scripts/DumpGlyphMappings.swift > Sources/SwiftShortcuts/Internal/GlyphMappings.generated.swift
 
+# Inspect a single glyph
+swift Scripts/InspectGlyph.swift 59446
+# Output: Symbol name: keyboard.fill
+
+# Render a glyph to PNG
+swift Scripts/RenderGlyph.swift 59446
 # Output: /tmp/glyph-59446.png
 ```
 
