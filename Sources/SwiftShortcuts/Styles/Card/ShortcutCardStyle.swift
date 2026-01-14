@@ -23,7 +23,7 @@ public struct ShortcutCardStyleConfiguration: Sendable {
     /// The shortcut's display name
     public let name: String
 
-    /// The shortcut's icon image (custom icon, if available)
+    /// The shortcut's icon image
     public let icon: Image?
 
     /// The SF Symbol name for the shortcut's glyph icon

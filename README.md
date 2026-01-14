@@ -220,7 +220,7 @@ See [Docs/iCloud-API.md](Docs/iCloud-API.md) for full response structure and col
 
 ### Icon Glyphs
 
-Apple stores shortcut icons as Int64 glyph IDs. These map to SF Symbols:
+Apple stores shortcut icons as Int64 glyph IDs in the `icon_glyph` field. These map to SF Symbols:
 
 | Glyph ID | SF Symbol |
 |----------|-----------|
@@ -230,6 +230,16 @@ Apple stores shortcut icons as Int64 glyph IDs. These map to SF Symbols:
 | ... | ... |
 
 We extracted 836 mappings from Apple's private frameworks. See [Docs/IconGlyph-Research.md](Docs/IconGlyph-Research.md) for details.
+
+**How ShortcutCard uses glyphs:**
+
+When you use the URL-based initializer, ShortcutCard fetches the glyph ID and resolves it to an SF Symbol. This is the primary icon source:
+
+1. **Glyph mapping** → SF Symbol from `icon_glyph` (primary)
+2. **API image** → Falls back to `icon` URL if glyph unmapped
+3. **None** → Shows gradient only if neither available
+
+For manual cards, you provide the icon directly via `systemImage:` or `image:`.
 
 **Regenerating mappings** (macOS only):
 ```bash

@@ -13,7 +13,7 @@ public struct DefaultShortcutCardStyle: ShortcutCardStyle {
     public func makeBody(configuration: ShortcutCardStyleConfiguration) -> some View {
         CardButton(configuration: configuration) {
             VStack(alignment: .leading, spacing: 5) {
-                // Icon in top-left (glyph is main, custom image is fallback)
+                // Icon in top-left (glyph SF Symbol is primary, API image is fallback)
                 Group {
                     if let glyphSymbol = configuration.glyphSymbol {
                         Image(systemName: glyphSymbol)
