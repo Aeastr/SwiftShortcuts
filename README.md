@@ -243,7 +243,7 @@ For manual cards, you provide the icon directly via `systemImage:` or `image:`.
 
 **Regenerating mappings** (macOS only):
 ```bash
-swift run dump-glyphs > Sources/SwiftShortcuts/Internal/GlyphMappings.generated.swift
+swift run dump-glyphs > Sources/SwiftShortcuts/Mappings/GlyphMappings.generated.swift
 ```
 
 ### Color Mapping
@@ -311,7 +311,7 @@ Apple Shortcuts has hundreds of actions. We can't map them all ourselves! If you
 If you notice a shortcut icon not rendering correctly, the glyph ID might be missing from our mappings. On macOS, you can regenerate:
 
 ```bash
-swift run dump-glyphs > Sources/SwiftShortcuts/Internal/GlyphMappings.generated.swift
+swift run dump-glyphs > Sources/SwiftShortcuts/Mappings/GlyphMappings.generated.swift
 ```
 
 ### New Features
