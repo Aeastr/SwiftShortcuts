@@ -30,4 +30,4 @@ jobs:
         run: swift build
 
       - name: Run Tests
-        run: xcodebuild test -scheme SwiftShortcuts -destination 'platform=macOS'
+        run: xcodebuild test -scheme SwiftShortcuts-Package -destination 'platform=macOS'
