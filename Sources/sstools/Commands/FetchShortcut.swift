@@ -5,8 +5,9 @@
 //  Fetches shortcut metadata from iCloud and outputs it as JSON.
 //
 //  Usage:
-//    swift run sstools fetch https://www.icloud.com/shortcuts/abc123
 //    swift run sstools fetch abc123
+//    swift run sstools fetch abc123 def456 ghi789
+//    swift run sstools fetch --file links.txt -o shortcuts.json
 //
 
 import ArgumentParser
@@ -18,8 +19,11 @@ struct FetchShortcut: AsyncParsableCommand {
         abstract: "Fetch shortcut data from iCloud and output as JSON"
     )
 
-    @Argument(help: "Shortcut URL or ID (e.g., https://www.icloud.com/shortcuts/abc123 or just abc123)")
-    var shortcut: String
+    @Argument(help: "Shortcut URLs or IDs")
+    var shortcuts: [String] = []
+
+    @Option(name: .shortAndLong, help: "File containing URLs/IDs (one per line)")
+    var file: String?
 
     @Flag(name: .shortAndLong, help: "Pretty print the JSON output")
     var pretty: Bool = false
@@ -27,29 +31,105 @@ struct FetchShortcut: AsyncParsableCommand {
     @Flag(name: .shortAndLong, help: "Include workflow actions in output")
     var actions: Bool = false
 
+    @Option(name: .shortAndLong, help: "Output file path (prints to stdout if not specified)")
+    var output: String?
+
+    @Flag(name: .long, help: "Output as Swift code instead of JSON")
+    var swift: Bool = false
+
+    @Option(name: .long, help: "Array name for Swift output (default: shortcuts)")
+    var arrayName: String = "shortcuts"
+
+    func validate() throws {
+        if shortcuts.isEmpty && file == nil {
+            throw ValidationError("Provide at least one shortcut URL/ID or use --file")
+        }
+    }
+
     func run() async throws {
-        let shortcutID = extractShortcutID(from: shortcut)
+        var allInputs = shortcuts
+
+        // Read from file if provided
+        if let filePath = file {
+            let fileURL = URL(fileURLWithPath: filePath)
+            let contents = try String(contentsOf: fileURL, encoding: .utf8)
+            let lines = contents
+                .components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty && !$0.hasPrefix("#") }
+            allInputs.append(contentsOf: lines)
+        }
+
+        fputs("Fetching \(allInputs.count) shortcut(s)...\n", stderr)
+
+        var results: [ShortcutOutput] = []
+        var failed: [String] = []
+
+        for (index, input) in allInputs.enumerated() {
+            let shortcutID = extractShortcutID(from: input)
+            fputs("[\(index + 1)/\(allInputs.count)] \(shortcutID)...", stderr)
+
+            do {
+                let shortcut = try await fetchShortcut(id: shortcutID)
+                results.append(shortcut)
+                fputs(" ✓\n", stderr)
+            } catch {
+                failed.append(shortcutID)
+                fputs(" ✗ \(error.localizedDescription)\n", stderr)
+            }
+        }
+
+        if !failed.isEmpty {
+            fputs("\nFailed: \(failed.joined(separator: ", "))\n", stderr)
+        }
+
+        fputs("\nFetched \(results.count)/\(allInputs.count) shortcuts\n", stderr)
+
+        // Encode output
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        if pretty || output != nil {
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        }
+
+        let jsonData: Data
+        if results.count == 1 {
+            jsonData = try encoder.encode(results[0])
+        } else {
+            jsonData = try encoder.encode(results)
+        }
+
+        if let outputPath = output {
+            let fileURL = URL(fileURLWithPath: outputPath)
+            try jsonData.write(to: fileURL)
+            fputs("Saved to \(outputPath)\n", stderr)
+        } else if let jsonString = String(data: jsonData, encoding: .utf8) {
+            print(jsonString)
+        }
+    }
+
+    // MARK: - Fetching
+
+    private func fetchShortcut(id shortcutID: String) async throws -> ShortcutOutput {
         let apiURL = "https://www.icloud.com/shortcuts/api/records/\(shortcutID)"
 
         guard let url = URL(string: apiURL) else {
-            throw ValidationError("Invalid shortcut URL or ID")
+            throw ValidationError("Invalid shortcut ID")
         }
-
-        fputs("Fetching shortcut \(shortcutID)...\n", stderr)
 
         let (data, response) = try await URLSession.shared.data(from: url)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw ValidationError("Invalid response from server")
+            throw ValidationError("Invalid response")
         }
 
         guard httpResponse.statusCode == 200 else {
-            throw ValidationError("Server returned status \(httpResponse.statusCode). Shortcut may not exist or is private.")
+            throw ValidationError("Not found (status \(httpResponse.statusCode))")
         }
 
         let cloudKitResponse = try JSONDecoder().decode(CloudKitResponse.self, from: data)
 
-        var output = ShortcutOutput(
+        var shortcutOutput = ShortcutOutput(
             id: cloudKitResponse.recordName,
             name: cloudKitResponse.fields.name.value,
             iconColor: cloudKitResponse.fields.icon_color.value,
@@ -59,29 +139,16 @@ struct FetchShortcut: AsyncParsableCommand {
             iCloudLink: "https://www.icloud.com/shortcuts/\(shortcutID)"
         )
 
-        if actions, let shortcutURL = output.shortcutURL {
-            fputs("Fetching workflow actions...\n", stderr)
-            output.actions = try await fetchWorkflowActions(from: shortcutURL)
+        if actions, let shortcutURL = shortcutOutput.shortcutURL {
+            shortcutOutput.actions = try await fetchWorkflowActions(from: shortcutURL)
         }
 
-        let encoder = JSONEncoder()
-        encoder.keyEncodingStrategy = .convertToSnakeCase
-        if pretty {
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        }
-
-        let jsonData = try encoder.encode(output)
-        if let jsonString = String(data: jsonData, encoding: .utf8) {
-            print(jsonString)
-        }
-
-        fputs("Done.\n", stderr)
+        return shortcutOutput
     }
 
     // MARK: - Helpers
 
     private func extractShortcutID(from input: String) -> String {
-        // If it looks like a URL, extract the ID
         if input.contains("icloud.com") || input.contains("/") {
             guard let url = URL(string: input) else { return input }
             let path = url.path
@@ -92,8 +159,6 @@ struct FetchShortcut: AsyncParsableCommand {
 
             return url.lastPathComponent
         }
-
-        // Otherwise, assume it's already an ID
         return input
     }
 
@@ -140,7 +205,7 @@ struct FetchShortcut: AsyncParsableCommand {
     }
 }
 
-// MARK: - CloudKit Response (mirrors ShortcutService)
+// MARK: - CloudKit Response
 
 private struct CloudKitResponse: Codable {
     let recordName: String

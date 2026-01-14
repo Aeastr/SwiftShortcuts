@@ -35,8 +35,8 @@ struct CloudKitResponse: Codable {
 
 // MARK: - Fetched Shortcut Data
 
-/// Data fetched from the iCloud Shortcuts API.
-public struct ShortcutData: Sendable, Identifiable {
+/// Data fetched from the iCloud Shortcuts API or loaded from JSON.
+public struct ShortcutData: Sendable, Identifiable, Codable {
     public let id: String
     public let name: String
     public let iconColor: Int64
@@ -89,6 +89,65 @@ public struct ShortcutData: Sendable, Identifiable {
             iCloudLink: iCloudLink,
             image: image
         )
+    }
+
+    // MARK: - Codable
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case iconColor = "icon_color"
+        case iconGlyph = "icon_glyph"
+        case iconURL = "icon_url"
+        case shortcutURL = "shortcut_url"
+        case iCloudLink = "i_cloud_link"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        iconColor = try container.decode(Int64.self, forKey: .iconColor)
+        iconGlyph = try container.decode(Int64.self, forKey: .iconGlyph)
+        iconURL = try container.decodeIfPresent(String.self, forKey: .iconURL)
+        shortcutURL = try container.decodeIfPresent(String.self, forKey: .shortcutURL)
+        iCloudLink = try container.decode(String.self, forKey: .iCloudLink)
+        image = nil
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(iconColor, forKey: .iconColor)
+        try container.encode(iconGlyph, forKey: .iconGlyph)
+        try container.encodeIfPresent(iconURL, forKey: .iconURL)
+        try container.encodeIfPresent(shortcutURL, forKey: .shortcutURL)
+        try container.encode(iCloudLink, forKey: .iCloudLink)
+    }
+
+    // MARK: - Loading from JSON
+
+    /// Loads shortcuts from JSON data. Accepts either a single object or an array.
+    public static func load(from data: Data) throws -> [ShortcutData] {
+        let decoder = JSONDecoder()
+        if let array = try? decoder.decode([ShortcutData].self, from: data) {
+            return array
+        }
+        return [try decoder.decode(ShortcutData.self, from: data)]
+    }
+
+    /// Loads shortcuts from a file URL. Accepts either a single object or an array.
+    public static func load(contentsOf url: URL) throws -> [ShortcutData] {
+        try load(from: Data(contentsOf: url))
+    }
+
+    /// Loads shortcuts from a bundle resource. Accepts either a single object or an array.
+    public static func load(resource: String, extension ext: String = "json", bundle: Bundle = .main) throws -> [ShortcutData] {
+        guard let url = bundle.url(forResource: resource, withExtension: ext) else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+        return try load(contentsOf: url)
     }
 }
 
