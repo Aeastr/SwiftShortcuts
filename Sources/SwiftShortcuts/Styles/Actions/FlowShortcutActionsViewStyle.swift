@@ -194,5 +194,11 @@ extension ShortcutActionsViewStyle where Self == FlowShortcutActionsViewStyle {
         ShortcutActionsView(url: "https://www.icloud.com/shortcuts/fdc7508d385b4755a00e9b394cf52ae1")
             .shortcutActionsViewStyle(.flow)
             .padding()
+        
+            ShortcutActionsView(url: "https://www.icloud.com/shortcuts/81e9938dabdc447094e03b09fc008d31")
+                .shortcutActionsViewStyle(.flow)
+                .padding()
     }
 }
+
+
