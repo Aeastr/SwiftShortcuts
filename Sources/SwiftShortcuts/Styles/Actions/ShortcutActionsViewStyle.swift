@@ -189,54 +189,6 @@ extension View {
 
 // MARK: - Previews
 
-#Preview("Default Components") {
-    let sampleActions = [
-        WorkflowAction(identifier: "is.workflow.actions.gettext", subtitle: "Hello World"),
-        WorkflowAction(identifier: "is.workflow.actions.showresult"),
-    ]
-
-    let config = ShortcutActionsViewStyleConfiguration(
-        shortcutName: "Sample Shortcut",
-        actions: sampleActions,
-        gradient: ShortcutGradient.blue,
-        isLoading: false
-    )
-
-    ScrollView {
-        VStack(alignment: .leading, spacing: 20) {
-            // Header
-            GroupBox("makeHeader") {
-                ListShortcutActionsViewStyle()
-                    .makeHeader(configuration: config)
-            }
-
-            // Nodes
-            GroupBox("makeNode") {
-                VStack(spacing: 0) {
-                    ForEach(sampleActions) { action in
-                        ListShortcutActionsViewStyle()
-                            .makeNode(action: action, gradient: ShortcutGradient.blue)
-                        Divider()
-                    }
-                }
-            }
-
-            // Loading
-            GroupBox("makeLoadingState") {
-                ListShortcutActionsViewStyle()
-                    .makeLoadingState()
-            }
-
-            // Empty
-            GroupBox("makeEmptyState") {
-                ListShortcutActionsViewStyle()
-                    .makeEmptyState()
-            }
-        }
-        .padding()
-    }
-}
-
 #Preview("Live Fetch") {
     ScrollView {
         ShortcutActionsView(url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f")

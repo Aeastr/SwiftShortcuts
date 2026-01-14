@@ -5,13 +5,14 @@
 
 import SwiftUI
 
-/// A flow-style visualization showing actions as connected nodes with control flow indentation.
+/// The default block-style visualization matching Apple's Shortcuts app.
+///
+/// Each action appears as its own rounded card with a colored icon badge.
+/// Control flow (Repeat, If, Menu) uses indentation to show nesting.
 public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
     public init() {}
 
-    private let nodeSize: CGFloat = 32
-    private let connectorHeight: CGFloat = 16
-    private let indentWidth: CGFloat = 24
+    private let indentWidth: CGFloat = 20
 
     // MARK: - Body
 
@@ -22,125 +23,16 @@ public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
         } else if configuration.actions.isEmpty {
             makeEmptyState()
         } else {
-            makeActionList(configuration: configuration)
-        }
-    }
+            VStack(spacing: 8) {
+                ForEach(Array(configuration.actions.enumerated()), id: \.element.id) { index, action in
+                    let indentLevel = calculateIndentLevel(actions: configuration.actions, upTo: index)
 
-    // MARK: - Node (Protocol Override)
-
-    @MainActor
-    public func makeNode(action: WorkflowAction, gradient: LinearGradient?) -> some View {
-        HStack(alignment: .center, spacing: 10) {
-            // Icon circle
-            ZStack {
-                if action.isControlFlowMarker {
-                    Circle()
-                        .strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1.5)
-                        .frame(width: nodeSize, height: nodeSize)
-                } else {
-                    Circle()
-                        .fill(gradient ?? LinearGradient(colors: [.gray], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: nodeSize, height: nodeSize)
+                    // Skip end markers
+                    if action.controlFlowMode != .end {
+                        ActionBlockView(action: action, gradient: configuration.gradient)
+                            .padding(.leading, CGFloat(indentLevel) * indentWidth)
+                    }
                 }
-
-                Image(systemName: action.systemImage)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(action.isControlFlowMarker ? .secondary : .white)
-            }
-
-            // Labels
-            VStack(alignment: .leading, spacing: 2) {
-                Text(action.displayName)
-                    .font(.subheadline)
-                    .foregroundStyle(action.isControlFlowMarker ? .secondary : .primary)
-
-                if let subtitle = action.subtitle {
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer()
-        }
-    }
-
-    // MARK: - Action List
-
-    @MainActor @ViewBuilder
-    private func makeActionList(configuration: ShortcutActionsViewStyleConfiguration) -> some View {
-        let actions = configuration.actions
-
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(actions.enumerated()), id: \.element.id) { index, action in
-                let indentLevel = calculateIndentLevel(actions: actions, upTo: index)
-                let isLast = index == actions.count - 1
-                let nextIndentLevel = isLast ? indentLevel : calculateIndentLevel(actions: actions, upTo: index + 1)
-                let indentChange = nextIndentLevel - indentLevel  // positive = deeper, negative = shallower
-
-                makeFlowNode(
-                    action: action,
-                    indentLevel: indentLevel,
-                    showConnector: !isLast,
-                    indentChange: indentChange,
-                    gradient: configuration.gradient
-                )
-            }
-        }
-    }
-
-    // MARK: - Flow Node (with indentation)
-
-    @MainActor @ViewBuilder
-    private func makeFlowNode(
-        action: WorkflowAction,
-        indentLevel: Int,
-        showConnector: Bool,
-        indentChange: Int,
-        gradient: LinearGradient?
-    ) -> some View {
-        let nodeHeight: CGFloat = action.subtitle != nil ? 56 : 44
-
-        VStack(spacing: 0) {
-            makeNode(action: action, gradient: gradient)
-                .frame(height: nodeHeight)
-
-            if showConnector {
-                makeConnector(indentChange: indentChange)
-            }
-        }
-        .padding(.leading, CGFloat(indentLevel) * indentWidth)
-    }
-
-    // MARK: - Connector
-
-    @MainActor @ViewBuilder
-    private func makeConnector(indentChange: Int) -> some View {
-        HStack {
-            Rectangle()
-                .fill(Color.secondary.opacity(0.3))
-                .frame(width: 2, height: connectorHeight)
-                .mask(connectorMask(indentChange: indentChange))
-                .offset(x: (nodeSize / 2) - 1)
-            Spacer()
-        }
-    }
-
-    private func connectorMask(indentChange: Int) -> some View {
-        Group {
-            if indentChange > 0 {
-                // Going deeper: fade out at bottom
-                LinearGradient(
-                    colors: [.white, .clear],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            } else if indentChange < 0 {
-                // Going shallower: hidden
-                Color.clear
-            } else {
-                // Same level: solid
-                Color.white
             }
         }
     }
@@ -159,6 +51,7 @@ public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
             }
         }
 
+        // Middle markers (Otherwise, Menu Item) stay at parent's indent level
         if let mode = actions[index].controlFlowMode {
             switch mode {
             case .start: break
@@ -170,25 +63,62 @@ public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
     }
 }
 
+// MARK: - Action Block View
+
+private struct ActionBlockView: View {
+    let action: WorkflowAction
+    let gradient: LinearGradient?
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Icon badge
+            ZStack {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(gradient ?? ShortcutGradient.gray)
+                    .frame(width: 30, height: 30)
+
+                Image(systemName: action.systemImage)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white)
+            }
+
+            // Action name and subtitle
+            VStack(alignment: .leading, spacing: 2) {
+                Text(action.displayName)
+                    .font(.body)
+                    .fontWeight(.medium)
+
+                if let subtitle = action.subtitle {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.tint)
+                }
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
 // MARK: - Style Extension
 
 extension ShortcutActionsViewStyle where Self == FlowShortcutActionsViewStyle {
-    /// A flow-style visualization with connected nodes and control flow indentation.
+    /// The default block-style visualization matching Apple's Shortcuts app.
     public static var flow: FlowShortcutActionsViewStyle { FlowShortcutActionsViewStyle() }
 }
 
 // MARK: - Preview
 
-#Preview("Flow Style") {
+#Preview("Block Style") {
     ScrollView {
         ShortcutActionsView(url: "https://www.icloud.com/shortcuts/fdc7508d385b4755a00e9b394cf52ae1")
-            .shortcutActionsViewStyle(.flow)
             .padding()
-        
-            ShortcutActionsView(url: "https://www.icloud.com/shortcuts/81e9938dabdc447094e03b09fc008d31")
-                .shortcutActionsViewStyle(.flow)
-                .padding()
+
+        ShortcutActionsView(url: "https://www.icloud.com/shortcuts/81e9938dabdc447094e03b09fc008d31")
+            .padding()
     }
 }
-
-

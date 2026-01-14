@@ -15,6 +15,8 @@
   <a href="https://developer.apple.com"><img src="https://img.shields.io/badge/visionOS-1+-000000?logo=apple" alt="visionOS 1+"></a>
 </p>
 
+> **Note:** This isn't related to App Intents or SiriKit. Those let your app *expose* actions to Shortcuts. This package does the opposite — display and preview *existing* shortcuts from iCloud share links in your own app. For example, a wallpaper app could showcase a "Random Wallpaper" shortcut that users can preview and add directly.
+
 
 ## Features
 
@@ -25,7 +27,7 @@
 - **Press feedback** - Built-in scale/opacity animations via ButtonStyle
 - **Detail view** - Present shortcut details with actions in a sheet
 - **Actions view** - Display the workflow steps inside a shortcut
-- **Multiple styles** - Flow visualization, list view, or create your own
+- **Block style** - Apple-style visualization with nested control flow
 - **15 gradients** - Apple Shortcuts color palette built-in
 - **Tap to open** - Tiles open shortcuts directly in the Shortcuts app
 
@@ -125,12 +127,7 @@ ShortcutActionsView(url: "https://www.icloud.com/shortcuts/abc123")
 
 > **Note:** Action name and icon mappings are incomplete. Some actions may display raw identifiers or generic icons. [Contributions welcome!](#action-mappings)
 
-The default style shows a flow visualization with indentation for control flow (If/Otherwise/Repeat). Use the list style for a simpler numbered view:
-
-```swift
-ShortcutActionsView(url: "https://www.icloud.com/shortcuts/abc123")
-    .shortcutActionsViewStyle(.list)
-```
+The default style shows actions as rounded blocks with nested control flow (If/Otherwise, Repeat, Menu).
 
 Pass pre-loaded data to avoid redundant fetches:
 
@@ -285,9 +282,7 @@ Can be initialized with a URL/ID (fetches everything) or with pre-loaded `Shortc
 
 Displays the workflow actions/steps inside a shortcut. Fetches the shortcut's plist data and parses the action list.
 
-Built-in actions styles:
-- `FlowShortcutActionsViewStyle` - Flow visualization with connectors and control flow indentation (default)
-- `ListShortcutActionsViewStyle` - Simple numbered list
+The default style (`FlowShortcutActionsViewStyle`) shows actions as rounded blocks matching Apple's Shortcuts app. Control flow actions (Repeat, If, Menu) nest their children inside the block.
 
 Apple Shortcuts has hundreds of actions - we can't map them all. Unknown actions fall back to parsing the identifier and showing a generic icon. See [Contributing](#action-mappings) to help expand coverage.
 
