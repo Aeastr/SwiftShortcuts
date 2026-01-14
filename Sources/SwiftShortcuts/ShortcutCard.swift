@@ -38,6 +38,10 @@ public struct ShortcutCard: View {
 
     private let dataSource: DataSource
 
+    private static func iCloudURL(for id: String) -> String {
+        "https://www.icloud.com/shortcuts/\(id)"
+    }
+
     // State for URL-based loading
     @State private var loadedData: ShortcutData?
     @State private var loadedIcon: Image?
@@ -56,7 +60,7 @@ public struct ShortcutCard: View {
     ///
     /// - Parameter id: The shortcut ID (e.g., "f00836becd2845109809720d2a70e32f")
     public init(id: String) {
-        self.dataSource = .url("https://www.icloud.com/shortcuts/\(id)")
+        self.dataSource = .url(Self.iCloudURL(for: id))
     }
 
     // MARK: - Manual Initializers
@@ -99,6 +103,47 @@ public struct ShortcutCard: View {
         url: String
     ) {
         self.dataSource = .manual(name: name, icon: nil, glyphSymbol: systemImage, url: url)
+    }
+    
+
+    /// Creates a shortcut card with manually provided details.
+    ///
+    /// - Parameters:
+    ///   - name: The shortcut's display name
+    ///   - image: The shortcut's icon image (optional)
+    ///   - id: The shortcut ID (e.g., "f00836becd2845109809720d2a70e32f")
+    ///
+    /// Use `.foregroundStyle()` to set the background gradient:
+    /// ```swift
+    /// ShortcutCard(name: "My Shortcut", systemImage: "star", url: "...")
+    ///     .foregroundStyle(LinearGradient(...))
+    /// ```
+    public init(
+        name: String,
+        image: Image? = nil,
+        id: String
+    ) {
+        self.dataSource = .manual(name: name, icon: image, glyphSymbol: nil, url: Self.iCloudURL(for: id))
+    }
+
+    /// Creates a shortcut card with a system image icon.
+    ///
+    /// - Parameters:
+    ///   - name: The shortcut's display name
+    ///   - systemImage: The SF Symbol name for the icon
+    ///   - id: The shortcut ID (e.g., "f00836becd2845109809720d2a70e32f")
+    ///
+    /// Use `.foregroundStyle()` to set the background gradient:
+    /// ```swift
+    /// ShortcutCard(name: "My Shortcut", systemImage: "star", url: "...")
+    ///     .foregroundStyle(LinearGradient(...))
+    /// ```
+    public init(
+        name: String,
+        systemImage: String,
+        id: String
+    ) {
+        self.dataSource = .manual(name: name, icon: nil, glyphSymbol: systemImage, url: Self.iCloudURL(for: id))
     }
 
     // MARK: - Body
