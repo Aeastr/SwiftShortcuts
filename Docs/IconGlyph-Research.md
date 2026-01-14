@@ -12,9 +12,19 @@ Investigating how Apple's `icon_glyph` Int64 values map to shortcut icons.
 
 ## Key Findings
 
-### 1. NOT Unicode/SF Symbols
+### 1. Glyph IDs ARE SF Symbols (via internal mapping)
 
-Tested rendering these codepoints as Unicode characters with system fonts - **they don't render**. These are Apple's internal glyph IDs, not Unicode codepoints mapped to SF Symbols.
+Initially tested rendering glyph numbers as Unicode codepoints - they don't render directly. However, **they ARE mapped to SF Symbols internally**.
+
+Using private APIs, we discovered the glyph IDs map to SF Symbol names:
+
+| Glyph ID | SF Symbol |
+|----------|-----------|
+| 59446 | `keyboard.fill` |
+| 61512 | `timer` |
+| 61699 | `append.page.fill` |
+
+The `WFWorkflowIcon` class converts a glyph ID to a `WFSymbolIcon` containing the SF Symbol name.
 
 ### 2. atnbueno/shortcut-icons Approach
 
@@ -98,8 +108,21 @@ Type encoding: @48@0:8@16{CGSize=dd}24q40
 - Returns: NSImage (or nil)
 - Param 1: WFIcon object
 - Param 2: CGSize (width, height)
-- Param 3: Int64 (style - 0 works)
+- Param 3: Int64 (style)
 ```
+
+**Style Values:**
+| Style | Result |
+|-------|--------|
+| 0 | Full icon with rounded background |
+| 1 | Just the symbol (no background) - blue filled |
+| 2 | White symbol on transparent |
+| 3 | White symbol on transparent |
+
+**Getting Just the Symbol:**
+To render without the rounded app-icon background:
+1. Create `WFSymbolIcon` directly with `initWithSymbolName:` using the SF Symbol name
+2. Use style 1 when rendering
 
 **Working Script:**
 See `Scripts/RenderGlyph.swift` - successfully renders any glyph to PNG.
@@ -128,7 +151,8 @@ All scripts are in `Scripts/` directory:
 | `ExtractGlyphs.swift` | Tests loading named assets from framework bundles |
 | `InspectWFIcon.swift` | Introspects WFIcon class methods/properties using ObjC runtime |
 | `FindIconSubclasses.swift` | Finds WFIcon subclasses and their initializers |
-| `RenderGlyph.swift` | **Renders any glyph ID to PNG using private APIs** |
+| `RenderGlyph.swift` | Renders any glyph ID to PNG with background |
+| `InspectGlyph.swift` | **Shows SF Symbol name for a glyph ID, renders with different styles** |
 
 Usage:
 ```bash
