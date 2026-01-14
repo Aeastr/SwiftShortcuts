@@ -47,6 +47,12 @@ struct ShortcutData: Sendable {
     var gradient: LinearGradient {
         ShortcutColors.gradient(for: iconColor)
     }
+
+    /// The glyph as a Unicode character (Private Use Area)
+    var glyphCharacter: Character? {
+        guard let scalar = Unicode.Scalar(UInt32(iconGlyph)) else { return nil }
+        return Character(scalar)
+    }
 }
 
 // MARK: - Service
