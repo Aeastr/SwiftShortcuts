@@ -296,12 +296,12 @@ Apple Shortcuts has hundreds of actions. We can't map them all ourselves! If you
    "is.workflow.actions.myaction": ActionInfo("My Action", icon: "star"),
    ```
 
-2. **Word not splitting?** Add it to [`CommonWords.swift`](Sources/SwiftShortcuts/Internal/CommonWords.swift):
+2. **Word not splitting?** Add it to [`CommonWords.swift`](Sources/SwiftShortcuts/Mappings/CommonWords.swift):
    ```swift
    "myword",
    ```
 
-3. **Missing icon pattern?** Add a fallback in [`WorkflowAction.swift`](Sources/SwiftShortcuts/Internal/WorkflowAction.swift):
+3. **Missing icon pattern?** Add a fallback in [`WorkflowAction.swift`](Sources/SwiftShortcuts/Models/WorkflowAction.swift):
    ```swift
    if identifier.contains("myword") { return "star" }
    ```

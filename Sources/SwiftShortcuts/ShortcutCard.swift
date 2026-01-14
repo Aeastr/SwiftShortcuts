@@ -7,14 +7,19 @@ import SwiftUI
 
 /// A card view that displays an Apple Shortcut with its icon, name, and gradient background.
 ///
-/// You can create a card in two ways:
+/// You can create a card in three ways:
 ///
-/// 1. **URL-based** - Provide an iCloud share URL and the card fetches all metadata automatically:
+/// 1. **ID-based** - Provide a shortcut ID and the card fetches all metadata automatically:
+/// ```swift
+/// ShortcutCard(id: "f00836becd2845109809720d2a70e32f")
+/// ```
+///
+/// 2. **URL-based** - Provide an iCloud share URL and the card fetches all metadata automatically:
 /// ```swift
 /// ShortcutCard(url: "https://www.icloud.com/shortcuts/abc123")
 /// ```
 ///
-/// 2. **Manual** - Provide the details yourself, use `.foregroundStyle()` for the gradient:
+/// 3. **Manual** - Provide the details yourself, use `.foregroundStyle()` for the gradient:
 /// ```swift
 /// ShortcutCard(name: "My Shortcut", systemImage: "star.fill", url: "https://...")
 ///     .foregroundStyle(Color.blue.gradient)
@@ -37,13 +42,20 @@ public struct ShortcutCard: View {
     @State private var loadedIcon: Image?
     @State private var isLoading = false
 
-    // MARK: - URL-based Initializer
+    // MARK: - URL-based Initializers
 
     /// Creates a shortcut card that automatically fetches metadata from an iCloud share URL.
     ///
     /// - Parameter url: The iCloud share URL (e.g., "https://www.icloud.com/shortcuts/abc123")
     public init(url: String) {
         self.dataSource = .url(url)
+    }
+
+    /// Creates a shortcut card that automatically fetches metadata using a shortcut ID.
+    ///
+    /// - Parameter id: The shortcut ID (e.g., "f00836becd2845109809720d2a70e32f")
+    public init(id: String) {
+        self.dataSource = .url("https://www.icloud.com/shortcuts/\(id)")
     }
 
     // MARK: - Manual Initializers
@@ -163,6 +175,12 @@ extension View {
 
 #Preview("URL-based") {
     ShortcutCard(url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f")
+        .frame(width: 160, height: 110)
+        .padding()
+}
+
+#Preview("ID-based") {
+    ShortcutCard(id: "f00836becd2845109809720d2a70e32f")
         .frame(width: 160, height: 110)
         .padding()
 }
