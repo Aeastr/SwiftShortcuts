@@ -23,11 +23,11 @@ public struct ShortcutTileStyleConfiguration: Sendable {
     /// The shortcut's display name
     public let name: String
 
-    /// The shortcut's icon image
-    public let icon: Image?
+    /// The SF Symbol name for the shortcut's icon
+    public let icon: String?
 
-    /// The SF Symbol name for the shortcut's glyph icon
-    public let glyphSymbol: String?
+    /// The shortcut's pre-rendered image (fallback when icon is nil)
+    public let image: Image?
 
     /// The shortcut's background gradient (nil = use `.foregroundStyle()` from environment)
     public let gradient: LinearGradient?
@@ -43,8 +43,8 @@ public struct ShortcutTileStyleConfiguration: Sendable {
 
     public init(
         name: String,
-        icon: Image?,
-        glyphSymbol: String?,
+        icon: String?,
+        image: Image?,
         gradient: LinearGradient?,
         isLoading: Bool,
         url: String,
@@ -52,7 +52,7 @@ public struct ShortcutTileStyleConfiguration: Sendable {
     ) {
         self.name = name
         self.icon = icon
-        self.glyphSymbol = glyphSymbol
+        self.image = image
         self.gradient = gradient
         self.isLoading = isLoading
         self.url = url
@@ -85,7 +85,7 @@ struct TileButtonStyle: ButtonStyle {
         let tileConfig = ShortcutTileStyleConfiguration(
             name: baseConfiguration.name,
             icon: baseConfiguration.icon,
-            glyphSymbol: baseConfiguration.glyphSymbol,
+            image: baseConfiguration.image,
             gradient: baseConfiguration.gradient,
             isLoading: baseConfiguration.isLoading,
             url: baseConfiguration.url,

@@ -45,15 +45,15 @@ public struct ShortcutData: Sendable, Identifiable {
     public let shortcutURL: String?
     public let iCloudLink: String
 
-    /// The loaded icon image (nil until fetched)
-    public let icon: Image?
+    /// The loaded pre-rendered image (nil until fetched)
+    public let image: Image?
 
     public var gradient: LinearGradient {
         ShortcutColors.gradient(for: iconColor)
     }
 
-    /// The SF Symbol name for this shortcut's glyph
-    public var glyphSymbol: String? {
+    /// The SF Symbol name for this shortcut's icon
+    public var icon: String? {
         GlyphMappings.symbol(for: iconGlyph)
     }
 
@@ -65,7 +65,7 @@ public struct ShortcutData: Sendable, Identifiable {
         iconURL: String?,
         shortcutURL: String?,
         iCloudLink: String,
-        icon: Image? = nil
+        image: Image? = nil
     ) {
         self.id = id
         self.name = name
@@ -74,11 +74,11 @@ public struct ShortcutData: Sendable, Identifiable {
         self.iconURL = iconURL
         self.shortcutURL = shortcutURL
         self.iCloudLink = iCloudLink
-        self.icon = icon
+        self.image = image
     }
 
-    /// Returns a copy of this data with the icon set
-    public func with(icon: Image?) -> ShortcutData {
+    /// Returns a copy of this data with the image set
+    public func with(image: Image?) -> ShortcutData {
         ShortcutData(
             id: id,
             name: name,
@@ -87,7 +87,7 @@ public struct ShortcutData: Sendable, Identifiable {
             iconURL: iconURL,
             shortcutURL: shortcutURL,
             iCloudLink: iCloudLink,
-            icon: icon
+            image: image
         )
     }
 }
@@ -128,7 +128,7 @@ struct ShortcutService: Sendable {
         )
     }
 
-    func fetchIcon(from urlString: String) async -> Image? {
+    func fetchImage(from urlString: String) async -> Image? {
         guard let url = URL(string: urlString) else { return nil }
 
         do {
@@ -143,7 +143,7 @@ struct ShortcutService: Sendable {
             }
 #endif
         } catch {
-            print("Failed to load shortcut icon: \(error)")
+            print("Failed to load shortcut image: \(error)")
         }
         return nil
     }

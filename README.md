@@ -181,8 +181,8 @@ VStack {
 ### Custom Tile Styles
 
 Create your own styles by conforming to `ShortcutTileStyle`. The configuration provides:
-- `glyphSymbol` - SF Symbol name (primary icon source)
-- `icon` - Pre-rendered image with background (fallback)
+- `icon` - SF Symbol name (primary)
+- `image` - Pre-rendered image (fallback)
 - `gradient` - The shortcut's gradient colors
 - `isPressed` - For custom press feedback
 
@@ -190,12 +190,12 @@ Create your own styles by conforming to `ShortcutTileStyle`. The configuration p
 struct MyTileStyle: ShortcutTileStyle {
     func makeBody(configuration: ShortcutTileStyleConfiguration) -> some View {
         VStack {
-            // Prefer SF Symbol, fall back to pre-rendered icon
-            if let glyph = configuration.glyphSymbol {
-                Image(systemName: glyph)
+            // Prefer SF Symbol, fall back to pre-rendered image
+            if let icon = configuration.icon {
+                Image(systemName: icon)
                     .font(.largeTitle)
-            } else if let icon = configuration.icon {
-                icon
+            } else if let image = configuration.image {
+                image
                     .resizable()
                     .frame(width: 60, height: 60)
             }
@@ -295,10 +295,10 @@ Apple Shortcuts has hundreds of actions - we can't map them all. Unknown actions
 
 The `ShortcutData` struct holds all fetched shortcut metadata:
 - `id`, `name`, `iCloudLink` - Basic info
-- `glyphSymbol` - SF Symbol name resolved from `iconGlyph`
+- `icon` - SF Symbol name resolved from `iconGlyph`
 - `gradient` - LinearGradient resolved from `iconColor`
-- `icon` - Pre-rendered icon image (loaded separately from `iconURL`)
-- `iconURL`, `shortcutURL` - Raw URLs for icon and plist
+- `image` - Pre-rendered image (loaded separately from `iconURL`)
+- `iconURL`, `shortcutURL` - Raw URLs for image and plist
 
 Conforms to `Identifiable` for use with `.sheet(item:)` and similar APIs.
 

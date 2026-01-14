@@ -12,10 +12,10 @@ public struct CompactShortcutTileStyle: ShortcutTileStyle {
     @MainActor
     public func makeBody(configuration: ShortcutTileStyleConfiguration) -> some View {
         HStack(spacing: 12) {
-            // Icon (glyph SF Symbol is primary, API image is fallback)
+            // Icon (SF Symbol is primary, pre-rendered image is fallback)
             Group {
-                if let glyphSymbol = configuration.glyphSymbol {
-                    Image(systemName: glyphSymbol)
+                if let icon = configuration.icon {
+                    Image(systemName: icon)
                         .resizable()
                         .scaledToFit()
                         .foregroundColor(.white)
@@ -27,8 +27,8 @@ public struct CompactShortcutTileStyle: ShortcutTileStyle {
                                 RoundedRectangle(cornerRadius: 8).fill(.primary)
                             }
                         }
-                } else if let icon = configuration.icon {
-                    icon
+                } else if let image = configuration.image {
+                    image
                         .resizable()
                         .scaledToFit()
                 } else if let gradient = configuration.gradient {

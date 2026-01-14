@@ -159,10 +159,10 @@ public struct ShortcutDetailView: View {
             // Fetch metadata
             var data = try await ShortcutService.shared.fetchMetadata(from: url)
 
-            // Fetch icon and add to data
+            // Fetch image and add to data
             if let iconURL = data.iconURL {
-                let icon = await ShortcutService.shared.fetchIcon(from: iconURL)
-                data = data.with(icon: icon)
+                let image = await ShortcutService.shared.fetchImage(from: iconURL)
+                data = data.with(image: image)
             }
 
             shortcutData = data

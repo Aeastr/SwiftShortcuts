@@ -113,7 +113,7 @@ public struct ShortcutTile: View {
             return ShortcutTileStyleConfiguration(
                 name: loadedData?.name ?? "",
                 icon: loadedData?.icon,
-                glyphSymbol: loadedData?.glyphSymbol,
+                image: loadedData?.image,
                 gradient: loadedData?.gradient,
                 isLoading: isLoading,
                 url: url
@@ -123,7 +123,7 @@ public struct ShortcutTile: View {
             return ShortcutTileStyleConfiguration(
                 name: data.name,
                 icon: data.icon,
-                glyphSymbol: data.glyphSymbol,
+                image: data.image,
                 gradient: data.gradient,
                 isLoading: false,
                 url: data.iCloudLink
@@ -169,10 +169,10 @@ public struct ShortcutTile: View {
         do {
             var data = try await ShortcutService.shared.fetchMetadata(from: url)
 
-            // Load icon if available and add it to data
+            // Load image if available and add it to data
             if let iconURL = data.iconURL {
-                let icon = await ShortcutService.shared.fetchIcon(from: iconURL)
-                data = data.with(icon: icon)
+                let image = await ShortcutService.shared.fetchImage(from: iconURL)
+                data = data.with(image: image)
             }
 
             loadedData = data

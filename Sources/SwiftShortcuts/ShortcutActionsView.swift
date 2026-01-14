@@ -92,6 +92,7 @@ public struct ShortcutActionsView: View {
         let configuration = ShortcutActionsViewStyleConfiguration(
             shortcutName: effectiveData?.name ?? "",
             icon: effectiveData?.icon,
+            image: effectiveData?.image,
             actions: effectiveActions,
             gradient: effectiveData?.gradient,
             isLoading: isLoading
@@ -131,10 +132,10 @@ public struct ShortcutActionsView: View {
             // Fetch metadata first
             var data = try await ShortcutService.shared.fetchMetadata(from: url)
 
-            // Load custom icon if available and add to data
+            // Load custom image if available and add to data
             if let iconURL = data.iconURL {
-                let icon = await ShortcutService.shared.fetchIcon(from: iconURL)
-                data = data.with(icon: icon)
+                let image = await ShortcutService.shared.fetchImage(from: iconURL)
+                data = data.with(image: image)
             }
 
             fetchedData = data

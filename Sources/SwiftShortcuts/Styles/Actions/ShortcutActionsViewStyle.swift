@@ -51,7 +51,13 @@ extension ShortcutActionsViewStyle {
                     .frame(width: 24, height: 24)
 
                 if let icon = configuration.icon {
-                    icon
+                    Image(systemName: icon)
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(.white)
+                        .frame(width: 14, height: 14)
+                } else if let image = configuration.image {
+                    image
                         .resizable()
                         .scaledToFit()
                         .frame(width: 16, height: 16)
@@ -124,8 +130,11 @@ public struct ShortcutActionsViewStyleConfiguration: Sendable {
     /// The shortcut's display name.
     public let shortcutName: String
 
-    /// The shortcut's custom icon (if set).
-    public let icon: Image?
+    /// The SF Symbol name for the shortcut's icon.
+    public let icon: String?
+
+    /// The shortcut's pre-rendered image (fallback when icon is nil).
+    public let image: Image?
 
     /// The workflow actions in order.
     public let actions: [WorkflowAction]
@@ -138,13 +147,15 @@ public struct ShortcutActionsViewStyleConfiguration: Sendable {
 
     public init(
         shortcutName: String,
-        icon: Image? = nil,
+        icon: String? = nil,
+        image: Image? = nil,
         actions: [WorkflowAction],
         gradient: LinearGradient?,
         isLoading: Bool
     ) {
         self.shortcutName = shortcutName
         self.icon = icon
+        self.image = image
         self.actions = actions
         self.gradient = gradient
         self.isLoading = isLoading
