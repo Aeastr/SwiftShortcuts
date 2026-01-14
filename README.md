@@ -69,7 +69,7 @@ ShortcutCard(name: "Morning Routine", systemImage: "sun.horizon.fill", url: "htt
 ```
 
 <div align="center">
-  <img src="/Resources/examples/manual.png" alt="Manual cards" width="600">
+  <img src="/Resources/examples/cards.png" alt="Cards" width="600">
 </div>
 
 ### Styling
@@ -86,10 +86,6 @@ VStack {
 }
 .shortcutCardStyle(.compact)
 ```
-
-<div align="center">
-  <img src="/Resources/examples/styling.png" alt="Compact style" width="600">
-</div>
 
 ### Custom Styles
 
