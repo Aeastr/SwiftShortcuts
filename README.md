@@ -20,9 +20,10 @@
 
 - **ID-based tiles** - Provide a shortcut ID and metadata is fetched automatically
 - **URL-based tiles** - Provide an iCloud share URL and metadata is fetched automatically
-- **Manual tiles** - Specify name, icon, and gradient for full control
+- **Data-based tiles** - Pass pre-loaded `ShortcutData` to avoid redundant fetches
 - **Custom tap actions** - Override default behavior with action closure
 - **Press feedback** - Built-in scale/opacity animations via ButtonStyle
+- **Detail view** - Present shortcut details with actions in a sheet
 - **Actions view** - Display the workflow steps inside a shortcut
 - **Multiple styles** - Flow visualization, list view, or create your own
 - **15 gradients** - Apple Shortcuts color palette built-in
@@ -70,23 +71,44 @@ Provide an iCloud share URL and the tile fetches all metadata automatically:
 ShortcutTile(url: "https://www.icloud.com/shortcuts/abc123")
 ```
 
-### Manual
+### Data-based
 
-Specify details yourself, use `.foregroundStyle()` for the gradient:
+Pass pre-loaded `ShortcutData` to avoid redundant API calls (useful when a parent view already fetched the data):
 
 ```swift
-ShortcutTile(name: "Morning Routine", systemImage: "sun.horizon.fill", url: "https://...")
-    .foregroundStyle(ShortcutGradient.orange)
+ShortcutTile(data: shortcutData)
 ```
 
 ### Custom Tap Actions
 
-Override the default tap behavior (opening in Shortcuts app):
+Override the default tap behavior (opening in Shortcuts app). The action receives both the URL and the loaded data:
 
 ```swift
-ShortcutTile(id: "abc123") { url in
-    showDetailView(for: url)
+ShortcutTile(id: "abc123") { url, data in
+    selectedData = data
+    showSheet = true
 }
+```
+
+### Detail View
+
+Present a sheet with the shortcut tile and its workflow actions:
+
+```swift
+@State private var selectedData: ShortcutData?
+
+ShortcutTile(id: "abc123") { url, data in
+    selectedData = data
+}
+.sheet(item: $selectedData) { data in
+    ShortcutDetailView(data: data)
+}
+```
+
+Or fetch everything from a URL:
+
+```swift
+ShortcutDetailView(url: "https://www.icloud.com/shortcuts/abc123")
 ```
 
 ### Shortcut Actions (Experimental)
@@ -108,6 +130,12 @@ The default style shows a flow visualization with indentation for control flow (
 ```swift
 ShortcutActionsView(url: "https://www.icloud.com/shortcuts/abc123")
     .shortcutActionsViewStyle(.list)
+```
+
+Pass pre-loaded data to avoid redundant fetches:
+
+```swift
+ShortcutActionsView(data: shortcutData, actions: actions)
 ```
 
 ### Custom Actions Styles
@@ -144,24 +172,29 @@ Apply the compact style for list layouts:
 
 ```swift
 VStack {
-    ShortcutTile(name: "Quick Note", systemImage: "note.text", url: "...")
-        .foregroundStyle(ShortcutGradient.blue)
-
-    ShortcutTile(name: "Start Timer", systemImage: "timer", url: "...")
-        .foregroundStyle(ShortcutGradient.green)
+    ShortcutTile(id: "abc123")
+    ShortcutTile(id: "def456")
 }
 .shortcutTileStyle(.compact)
 ```
 
 ### Custom Tile Styles
 
-Create your own styles by conforming to `ShortcutTileStyle`. Styles receive `isPressed` for custom press feedback:
+Create your own styles by conforming to `ShortcutTileStyle`. The configuration provides:
+- `glyphSymbol` - SF Symbol name (primary icon source)
+- `icon` - Pre-rendered image with background (fallback)
+- `gradient` - The shortcut's gradient colors
+- `isPressed` - For custom press feedback
 
 ```swift
 struct MyTileStyle: ShortcutTileStyle {
     func makeBody(configuration: ShortcutTileStyleConfiguration) -> some View {
         VStack {
-            if let icon = configuration.icon {
+            // Prefer SF Symbol, fall back to pre-rendered icon
+            if let glyph = configuration.glyphSymbol {
+                Image(systemName: glyph)
+                    .font(.largeTitle)
+            } else if let icon = configuration.icon {
                 icon
                     .resizable()
                     .frame(width: 60, height: 60)
@@ -180,7 +213,7 @@ struct MyTileStyle: ShortcutTileStyle {
 }
 
 // Usage
-ShortcutTile(url: "...")
+ShortcutTile(id: "abc123")
     .shortcutTileStyle(MyTileStyle())
 ```
 
@@ -232,15 +265,21 @@ Displays a shortcut as a tappable tile. Supports three data modes:
 
 2. **URL-based**: Extracts the shortcut ID from the iCloud URL and fetches metadata automatically.
 
-3. **Manual**: Uses the provided name and icon directly. The gradient comes from SwiftUI's `.foregroundStyle()` environment value.
+3. **Data-based**: Uses pre-loaded `ShortcutData` directly. No fetching occurs.
 
 ID-based and URL-based tiles load asynchronously with configurable staggered requests (see [Loading Stagger](#loading-stagger)).
 
-Tapping a tile opens the shortcut in the Shortcuts app via the `shortcuts://` URL scheme by default. Pass an action closure to override this behavior.
+Tapping a tile opens the shortcut in the Shortcuts app via the `shortcuts://` URL scheme by default. Pass an action closure to override this behavior - it receives both the URL and the loaded `ShortcutData`.
 
 Built-in tile styles:
 - `DefaultShortcutTileStyle` - 1.5 aspect ratio tile with centered icon and name
 - `CompactShortcutTileStyle` - Horizontal row with icon, name, and material background
+
+### ShortcutDetailView
+
+Presents a sheet with the shortcut tile and its workflow actions. Includes an "Add Shortcut" button that opens the iCloud link.
+
+Can be initialized with a URL/ID (fetches everything) or with pre-loaded `ShortcutData` (avoids redundant fetches when the parent already loaded the data).
 
 ### ShortcutActionsView (Experimental)
 
@@ -251,6 +290,17 @@ Built-in actions styles:
 - `ListShortcutActionsViewStyle` - Simple numbered list
 
 Apple Shortcuts has hundreds of actions - we can't map them all. Unknown actions fall back to parsing the identifier and showing a generic icon. See [Contributing](#action-mappings) to help expand coverage.
+
+### ShortcutData
+
+The `ShortcutData` struct holds all fetched shortcut metadata:
+- `id`, `name`, `iCloudLink` - Basic info
+- `glyphSymbol` - SF Symbol name resolved from `iconGlyph`
+- `gradient` - LinearGradient resolved from `iconColor`
+- `icon` - Pre-rendered icon image (loaded separately from `iconURL`)
+- `iconURL`, `shortcutURL` - Raw URLs for icon and plist
+
+Conforms to `Identifiable` for use with `.sheet(item:)` and similar APIs.
 
 
 ## How It Works
@@ -286,13 +336,13 @@ We extracted 836 mappings from Apple's private frameworks. See [Docs/IconGlyph-R
 
 **How ShortcutTile uses glyphs:**
 
-When you use the URL-based initializer, ShortcutTile fetches the glyph ID and resolves it to an SF Symbol. This is the primary icon source:
+ShortcutTile fetches the glyph ID and resolves it to an SF Symbol. This is the primary icon source:
 
 1. **Glyph mapping** → SF Symbol from `icon_glyph` (primary)
 2. **API image** → Falls back to `icon` URL if glyph unmapped
 3. **None** → Shows gradient only if neither available
 
-For manual tiles, you provide the icon directly via `systemImage:` or `image:`.
+Custom tile styles receive both `glyphSymbol` and `icon` in the configuration and can choose how to use them.
 
 **Regenerating mappings** (macOS only):
 ```bash
