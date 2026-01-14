@@ -60,11 +60,19 @@ From atnbueno's sprite data:
 - **iOS 18**: 61590-62212 (~200 new glyphs)
 - **iOS 26**: 62213-62501 (~100 new glyphs)
 
+### 6. Asset Extraction Attempt
+
+Tried extracting from `WorkflowKit.framework/Resources/Assets.car`:
+- `xcrun assetutil` creates BOM files, not extracted images
+- Would need specialized tools like `acextract` or similar
+- The `ZZZZPackedAsset` entries are small (148x184 etc) - possibly icon packs, not full glyph sprites
+
 ## Open Questions
 
 1. How does Apple's web renderer display glyphs without custom icons?
 2. Can we extract the `ZZZZPackedAsset` sprites from system frameworks?
 3. Is there a private API to render glyphs by ID?
+4. Where are the full-size glyph sprites stored?
 
 ## Resources
 
