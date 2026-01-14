@@ -188,9 +188,11 @@ The protocol provides default implementations for `makeHeader`, `makeNode`, `mak
 
 Displays a shortcut as a tappable card. Supports three data modes:
 
-1. **ID-based**: Takes a shortcut ID directly and fetches metadata automatically. Icons load asynchronously with staggered requests to avoid rate limiting.
+1. **ID-based**: Takes a shortcut ID directly and fetches metadata automatically.
 
 2. **URL-based**: Extracts the shortcut ID from the iCloud URL and fetches metadata automatically.
+
+Both load asynchronously with staggered requests to avoid rate limiting.
 
 3. **Manual**: Uses the provided name and icon directly. The gradient comes from SwiftUI's `.foregroundStyle()` environment value.
 
