@@ -74,15 +74,17 @@ extension ShortcutTileStyle where Self == DefaultShortcutTileStyle {
 // MARK: - Preview
 
 #Preview("Default Style") {
-    VStack(spacing: 20) {
-        ShortcutTile(url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f")
-            .frame(width: 160, height: 110)
+    ScrollView {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 16)], spacing: 16) {
+            ShortcutTile(url: "https://www.icloud.com/shortcuts/63c3c8a85a2245cf86def8258c58de87")
+                .frame(height: 110)
 
-        ShortcutTile(url: "https://www.icloud.com/shortcuts/59c0216a670f4b98ae36e092aab87cdf")
-            .frame(width: 160, height: 110)
+            ShortcutTile(url: "https://www.icloud.com/shortcuts/ede7f60d1aaa48f6b71be479a9ebe673")
+                .frame(height: 110)
 
-        ShortcutTile(url: "https://www.icloud.com/shortcuts/ab1317716ca7490b8536134367b7ba39")
-            .frame(width: 160, height: 110)
+            ShortcutTile(url: "https://www.icloud.com/shortcuts/0a42a603952b433bbc5d4ae5c78f2995")
+                .frame(height: 110)
+        }
+        .padding()
     }
-    .padding()
 }

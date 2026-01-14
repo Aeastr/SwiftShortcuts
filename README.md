@@ -16,6 +16,10 @@
   <a href="https://developer.apple.com"><img src="https://img.shields.io/badge/visionOS-1+-000000?logo=apple" alt="visionOS 1+"></a>
 </p>
 
+<p align="center">
+  <img src="/resources/hero.png" alt="Two iPhones showing SwiftShortcuts: left displays a shortcut detail view with workflow actions like Repeat, Menu, and Apple Intelligence; right shows shortcut tiles for Daily Standup, Split Screen Photos, and Start Pomodoro">
+</p>
+
 > **Note:** This isn't related to App Intents or SiriKit. Those let your app *expose* actions to Shortcuts. This package does the opposite — display and preview *existing* shortcuts from iCloud share links in your own app. For example, a wallpaper app could showcase a "Random Wallpaper" shortcut that users can preview and add directly.
 
 
@@ -63,7 +67,7 @@ ShortcutTile(id: "f00836becd2845109809720d2a70e32f")
 ```
 
 <div align="center">
-  <img src="/Resources/examples/cards.png" alt="Tiles" width="600">
+  <img src="/resources/examples/tiles.png" alt="ShortcutTile grid showing Action Items from Meeting Notes, Expand URL, and Delete Assignment shortcuts" width="600">
 </div>
 
 ### URL-based
@@ -123,7 +127,7 @@ ShortcutActionsView(url: "https://www.icloud.com/shortcuts/abc123")
 ```
 
 <div align="center">
-  <img src="/Resources/examples/actions-view.png" alt="Actions view" width="600">
+  <img src="/resources/examples/actions-view.png" alt="ShortcutActionsView showing workflow steps: Record Audio, Transcribe Audio Action, and Send Message" width="600">
 </div>
 
 > **Note:** Action name and icon mappings are incomplete. Some actions may display raw identifiers or generic icons. [Contributions welcome!](#action-mappings)
