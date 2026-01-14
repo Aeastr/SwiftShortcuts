@@ -28,6 +28,7 @@ import SwiftUI
 /// Tapping the card opens the shortcut in the Shortcuts app.
 public struct ShortcutCard: View {
     @Environment(\.shortcutCardStyle) private var style
+    @Environment(\.shortcutLoadingStagger) private var stagger
 
     // Source of data
     private enum DataSource: Sendable {
@@ -142,8 +143,10 @@ public struct ShortcutCard: View {
         isLoading = true
         defer { isLoading = false }
 
-        // Small random delay to stagger requests when displaying multiple cards
-        try? await Task.sleep(nanoseconds: UInt64.random(in: 50_000_000...200_000_000))
+        // Stagger requests when displaying multiple cards
+        if let stagger {
+            try? await Task.sleep(nanoseconds: UInt64.random(in: stagger))
+        }
 
         do {
             let data = try await ShortcutService.shared.fetchMetadata(from: url)
@@ -168,6 +171,55 @@ extension View {
     /// - Returns: A view with the style applied
     public func shortcutCardStyle(_ style: some ShortcutCardStyle) -> some View {
         environment(\.shortcutCardStyle, style)
+    }
+}
+
+// MARK: - Loading Stagger Configuration
+
+/// Controls the stagger delay for shortcut card loading.
+public enum ShortcutLoadingStagger: Sendable {
+    /// Disable staggering entirely for immediate loading.
+    case disabled
+}
+
+private struct ShortcutLoadingStaggerKey: EnvironmentKey {
+    static let defaultValue: ClosedRange<UInt64>? = 50_000_000...200_000_000
+}
+
+extension EnvironmentValues {
+    var shortcutLoadingStagger: ClosedRange<UInt64>? {
+        get { self[ShortcutLoadingStaggerKey.self] }
+        set { self[ShortcutLoadingStaggerKey.self] = newValue }
+    }
+}
+
+extension View {
+    /// Configures the stagger delay range for shortcut card loading.
+    ///
+    /// When displaying multiple cards, each card waits a random delay within this range
+    /// before fetching metadata. This prevents overwhelming the API with simultaneous requests.
+    ///
+    /// - Parameter range: The delay range in seconds (e.g., `0.05...0.2`)
+    /// - Returns: A view with the stagger configuration applied
+    ///
+    /// ```swift
+    /// ShortcutCard(id: "abc123")
+    ///     .shortcutLoadingStagger(0.01...0.05)
+    /// ```
+    public func shortcutLoadingStagger(_ range: ClosedRange<Double>) -> some View {
+        environment(\.shortcutLoadingStagger,
+            UInt64(range.lowerBound * 1_000_000_000)...UInt64(range.upperBound * 1_000_000_000)
+        )
+    }
+
+    /// Disables stagger delay for shortcut card loading.
+    ///
+    /// ```swift
+    /// ShortcutCard(id: "abc123")
+    ///     .shortcutLoadingStagger(.disabled)
+    /// ```
+    public func shortcutLoadingStagger(_ stagger: ShortcutLoadingStagger) -> some View {
+        environment(\.shortcutLoadingStagger, nil)
     }
 }
 

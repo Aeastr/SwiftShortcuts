@@ -121,6 +121,29 @@ ShortcutCard(url: "...")
     .shortcutCardStyle(MyCardStyle())
 ```
 
+### Loading Stagger
+
+When displaying multiple cards, each card waits a random delay before fetching metadata to avoid overwhelming the API. Configure this with `.shortcutLoadingStagger()`:
+
+```swift
+// Faster loading with smaller stagger (0.01-0.05 seconds)
+ShortcutCard(id: "abc123")
+    .shortcutLoadingStagger(0.01...0.05)
+
+// Disable staggering entirely for immediate loading
+ShortcutCard(id: "abc123")
+    .shortcutLoadingStagger(.disabled)
+
+// Apply to multiple cards
+VStack {
+    ShortcutCard(id: "abc123")
+    ShortcutCard(id: "def456")
+}
+.shortcutLoadingStagger(0.1...0.3)
+```
+
+Default stagger range is `0.05...0.2` seconds.
+
 ### Available Gradients
 
 ```swift
@@ -192,9 +215,9 @@ Displays a shortcut as a tappable card. Supports three data modes:
 
 2. **URL-based**: Extracts the shortcut ID from the iCloud URL and fetches metadata automatically.
 
-Both load asynchronously with staggered requests to avoid rate limiting.
-
 3. **Manual**: Uses the provided name and icon directly. The gradient comes from SwiftUI's `.foregroundStyle()` environment value.
+
+ID-based and URL-based cards load asynchronously with configurable staggered requests (see [Loading Stagger](#loading-stagger)).
 
 Tapping a card opens the shortcut in the Shortcuts app via the `shortcuts://` URL scheme.
 
