@@ -11,11 +11,11 @@ import SwiftUI
 /// Control flow (Repeat, If, Menu) uses indentation to show nesting.
 public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
     public init() {}
-
+    
     private let indentWidth: CGFloat = 20
-
+    
     // MARK: - Body
-
+    
     @MainActor
     public func makeBody(configuration: ShortcutActionsViewStyleConfiguration) -> some View {
         if configuration.isLoading {
@@ -26,7 +26,7 @@ public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
             VStack(spacing: 8) {
                 ForEach(Array(configuration.actions.enumerated()), id: \.element.id) { index, action in
                     let indentLevel = calculateIndentLevel(actions: configuration.actions, upTo: index)
-
+                    
                     // Skip end markers
                     if action.controlFlowMode != .end {
                         ActionBlockView(action: action, gradient: configuration.gradient)
@@ -36,9 +36,9 @@ public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
             }
         }
     }
-
+    
     // MARK: - Indent Calculation
-
+    
     private func calculateIndentLevel(actions: [WorkflowAction], upTo index: Int) -> Int {
         var level = 0
         for i in 0..<index {
@@ -50,7 +50,7 @@ public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
                 }
             }
         }
-
+        
         // Middle markers (Otherwise, Menu Item) stay at parent's indent level
         if let mode = actions[index].controlFlowMode {
             switch mode {
@@ -58,7 +58,7 @@ public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
             case .middle, .end: level = max(0, level - 1)
             }
         }
-
+        
         return level
     }
 }
@@ -68,39 +68,43 @@ public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
 private struct ActionBlockView: View {
     let action: WorkflowAction
     let gradient: LinearGradient?
-
+    
     var body: some View {
         HStack(spacing: 12) {
             // Icon badge
             ZStack {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(gradient ?? ShortcutGradient.gray)
-                    .frame(width: 30, height: 30)
-
+                
+                
+                .frame(width: 20, height: 20)
+                
                 Image(systemName: action.systemImage)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.white)
             }
-
+            
             // Action name and subtitle
             VStack(alignment: .leading, spacing: 2) {
                 Text(action.displayName)
                     .font(.body)
                     .fontWeight(.medium)
-
+                
                 if let subtitle = action.subtitle {
                     Text(subtitle)
                         .font(.subheadline)
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(gradient ?? ShortcutGradient.gray)
+                        .opacity(0.8)
                 }
             }
-
+            
             Spacer()
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.leading, 14)
+        .padding(.trailing, 7)
+        .padding(.vertical, 8)
         .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .clipShape(RoundedRectangle(cornerRadius: 26))
     }
 }
 
@@ -117,7 +121,7 @@ extension ShortcutActionsViewStyle where Self == FlowShortcutActionsViewStyle {
     ScrollView {
         ShortcutActionsView(url: "https://www.icloud.com/shortcuts/fdc7508d385b4755a00e9b394cf52ae1")
             .padding()
-
+        
         ShortcutActionsView(url: "https://www.icloud.com/shortcuts/81e9938dabdc447094e03b09fc008d31")
             .padding()
     }
