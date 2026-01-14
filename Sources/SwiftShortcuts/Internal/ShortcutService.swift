@@ -265,7 +265,7 @@ struct ShortcutService: Sendable {
         for key in keys {
             // Direct string
             if let str = params[key] as? String, !str.isEmpty {
-                return str.count > 40 ? String(str.prefix(40)) + "..." : str
+                return formatSubtitle(str)
             }
             // Number
             if let num = params[key] as? NSNumber {
@@ -276,9 +276,19 @@ struct ShortcutService: Sendable {
                let text = dict["Value"] as? [String: Any],
                let string = text["string"] as? String,
                !string.isEmpty {
-                return string.count > 40 ? String(string.prefix(40)) + "..." : string
+                return formatSubtitle(string)
             }
         }
         return nil
+    }
+
+    /// Formats a subtitle string, filtering out placeholder-only values.
+    private static func formatSubtitle(_ string: String) -> String? {
+        // Filter out strings that are only placeholder characters (U+FFFC)
+        let cleaned = string.replacingOccurrences(of: "\u{FFFC}", with: "").trimmingCharacters(in: .whitespaces)
+        if cleaned.isEmpty { return nil }
+
+        // Truncate long strings
+        return cleaned.count > 40 ? String(cleaned.prefix(40)) + "..." : cleaned
     }
 }
