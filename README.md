@@ -56,7 +56,7 @@ ShortcutCard(url: "https://www.icloud.com/shortcuts/abc123")
 ```
 
 <div align="center">
-  <img src="/Resources/examples/url-based.png" alt="URL-based cards" width="600">
+  <img src="/Resources/examples/cards.png" alt="Cards" width="600">
 </div>
 
 ### Manual
@@ -68,9 +68,7 @@ ShortcutCard(name: "Morning Routine", systemImage: "sun.horizon.fill", url: "htt
     .foregroundStyle(ShortcutGradient.orange)
 ```
 
-<div align="center">
-  <img src="/Resources/examples/cards.png" alt="Cards" width="600">
-</div>
+
 
 ### Styling
 
