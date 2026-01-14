@@ -28,8 +28,8 @@ import SwiftUI
 /// By default, tapping the tile opens the shortcut in the Shortcuts app.
 /// Provide a custom action to override:
 /// ```swift
-/// ShortcutTile(id: "abc123") { url in
-///     // Custom action
+/// ShortcutTile(id: "abc123") { url, data in
+///     // Custom action - data includes icon after loading
 /// }
 /// ```
 public struct ShortcutTile: View {
@@ -41,10 +41,11 @@ public struct ShortcutTile: View {
     private enum DataSource: Sendable {
         case url(String)
         case manual(name: String, icon: Image?, glyphSymbol: String?, url: String)
+        case preloaded(data: ShortcutData)
     }
 
     private let dataSource: DataSource
-    private let action: ((String) -> Void)?
+    private let action: ((_ url: String, _ data: ShortcutData?) -> Void)?
 
     private static func iCloudURL(for id: String) -> String {
         "https://www.icloud.com/shortcuts/\(id)"
@@ -52,7 +53,6 @@ public struct ShortcutTile: View {
 
     // State for URL-based loading
     @State private var loadedData: ShortcutData?
-    @State private var loadedIcon: Image?
     @State private var isLoading = false
 
     // MARK: - URL-based Initializers
@@ -61,8 +61,8 @@ public struct ShortcutTile: View {
     ///
     /// - Parameters:
     ///   - url: The iCloud share URL (e.g., "https://www.icloud.com/shortcuts/abc123")
-    ///   - action: Optional custom action when tapped. Receives the URL. Defaults to opening in Shortcuts app.
-    public init(url: String, action: ((String) -> Void)? = nil) {
+    ///   - action: Optional custom action when tapped. Receives url and data. Defaults to opening in Shortcuts app.
+    public init(url: String, action: ((_ url: String, _ data: ShortcutData?) -> Void)? = nil) {
         self.dataSource = .url(url)
         self.action = action
     }
@@ -71,8 +71,8 @@ public struct ShortcutTile: View {
     ///
     /// - Parameters:
     ///   - id: The shortcut ID (e.g., "f00836becd2845109809720d2a70e32f")
-    ///   - action: Optional custom action when tapped. Receives the URL. Defaults to opening in Shortcuts app.
-    public init(id: String, action: ((String) -> Void)? = nil) {
+    ///   - action: Optional custom action when tapped. Receives url and data. Defaults to opening in Shortcuts app.
+    public init(id: String, action: ((_ url: String, _ data: ShortcutData?) -> Void)? = nil) {
         self.dataSource = .url(Self.iCloudURL(for: id))
         self.action = action
     }
@@ -85,7 +85,7 @@ public struct ShortcutTile: View {
     ///   - name: The shortcut's display name
     ///   - image: The shortcut's icon image (optional)
     ///   - url: The iCloud share URL for tap-to-open
-    ///   - action: Optional custom action when tapped. Receives the URL. Defaults to opening in Shortcuts app.
+    ///   - action: Optional custom action when tapped. Receives url and data. Defaults to opening in Shortcuts app.
     ///
     /// Use `.foregroundStyle()` to set the background gradient:
     /// ```swift
@@ -96,7 +96,7 @@ public struct ShortcutTile: View {
         name: String,
         image: Image? = nil,
         url: String,
-        action: ((String) -> Void)? = nil
+        action: ((_ url: String, _ data: ShortcutData?) -> Void)? = nil
     ) {
         self.dataSource = .manual(name: name, icon: image, glyphSymbol: nil, url: url)
         self.action = action
@@ -108,7 +108,7 @@ public struct ShortcutTile: View {
     ///   - name: The shortcut's display name
     ///   - systemImage: The SF Symbol name for the icon
     ///   - url: The iCloud share URL for tap-to-open
-    ///   - action: Optional custom action when tapped. Receives the URL. Defaults to opening in Shortcuts app.
+    ///   - action: Optional custom action when tapped. Receives url and data. Defaults to opening in Shortcuts app.
     ///
     /// Use `.foregroundStyle()` to set the background gradient:
     /// ```swift
@@ -119,7 +119,7 @@ public struct ShortcutTile: View {
         name: String,
         systemImage: String,
         url: String,
-        action: ((String) -> Void)? = nil
+        action: ((_ url: String, _ data: ShortcutData?) -> Void)? = nil
     ) {
         self.dataSource = .manual(name: name, icon: nil, glyphSymbol: systemImage, url: url)
         self.action = action
@@ -131,7 +131,7 @@ public struct ShortcutTile: View {
     ///   - name: The shortcut's display name
     ///   - image: The shortcut's icon image (optional)
     ///   - id: The shortcut ID (e.g., "f00836becd2845109809720d2a70e32f")
-    ///   - action: Optional custom action when tapped. Receives the URL. Defaults to opening in Shortcuts app.
+    ///   - action: Optional custom action when tapped. Receives url and data. Defaults to opening in Shortcuts app.
     ///
     /// Use `.foregroundStyle()` to set the background gradient:
     /// ```swift
@@ -142,7 +142,7 @@ public struct ShortcutTile: View {
         name: String,
         image: Image? = nil,
         id: String,
-        action: ((String) -> Void)? = nil
+        action: ((_ url: String, _ data: ShortcutData?) -> Void)? = nil
     ) {
         self.dataSource = .manual(name: name, icon: image, glyphSymbol: nil, url: Self.iCloudURL(for: id))
         self.action = action
@@ -154,7 +154,7 @@ public struct ShortcutTile: View {
     ///   - name: The shortcut's display name
     ///   - systemImage: The SF Symbol name for the icon
     ///   - id: The shortcut ID (e.g., "f00836becd2845109809720d2a70e32f")
-    ///   - action: Optional custom action when tapped. Receives the URL. Defaults to opening in Shortcuts app.
+    ///   - action: Optional custom action when tapped. Receives url and data. Defaults to opening in Shortcuts app.
     ///
     /// Use `.foregroundStyle()` to set the background gradient:
     /// ```swift
@@ -165,9 +165,27 @@ public struct ShortcutTile: View {
         name: String,
         systemImage: String,
         id: String,
-        action: ((String) -> Void)? = nil
+        action: ((_ url: String, _ data: ShortcutData?) -> Void)? = nil
     ) {
         self.dataSource = .manual(name: name, icon: nil, glyphSymbol: systemImage, url: Self.iCloudURL(for: id))
+        self.action = action
+    }
+
+    // MARK: - Pre-loaded Initializer
+
+    /// Creates a shortcut tile with pre-loaded data. No fetching will occur.
+    ///
+    /// Use this initializer when you already have the shortcut data (e.g., from a parent view
+    /// that fetched it) to avoid redundant API calls. The icon should be included in the data.
+    ///
+    /// - Parameters:
+    ///   - data: The pre-loaded shortcut data (including icon)
+    ///   - action: Optional custom action when tapped. Receives url and data. Defaults to opening in Shortcuts app.
+    public init(
+        data: ShortcutData,
+        action: ((_ url: String, _ data: ShortcutData?) -> Void)? = nil
+    ) {
+        self.dataSource = .preloaded(data: data)
         self.action = action
     }
 
@@ -194,7 +212,7 @@ public struct ShortcutTile: View {
         case .url(let url):
             return ShortcutTileStyleConfiguration(
                 name: loadedData?.name ?? "",
-                icon: loadedIcon,
+                icon: loadedData?.icon,
                 glyphSymbol: loadedData?.glyphSymbol,
                 gradient: loadedData?.gradient,
                 isLoading: isLoading,
@@ -210,12 +228,31 @@ public struct ShortcutTile: View {
                 isLoading: false,
                 url: url
             )
+
+        case .preloaded(let data):
+            return ShortcutTileStyleConfiguration(
+                name: data.name,
+                icon: data.icon,
+                glyphSymbol: data.glyphSymbol,
+                gradient: data.gradient,
+                isLoading: false,
+                url: data.iCloudLink
+            )
         }
     }
 
     private func performAction(with configuration: ShortcutTileStyleConfiguration) {
         if let action {
-            action(configuration.url)
+            // Get effective data based on data source
+            let data: ShortcutData? = switch dataSource {
+            case .url:
+                loadedData
+            case .manual:
+                nil
+            case .preloaded(let preloadedData):
+                preloadedData
+            }
+            action(configuration.url, data)
         } else {
             openShortcut(url: configuration.url)
         }
@@ -231,6 +268,7 @@ public struct ShortcutTile: View {
     }
 
     private func loadDataIfNeeded() async {
+        // Only load for URL-based data source; manual and preloaded don't need fetching
         guard case .url(let url) = dataSource else { return }
 
         isLoading = true
@@ -242,13 +280,15 @@ public struct ShortcutTile: View {
         }
 
         do {
-            let data = try await ShortcutService.shared.fetchMetadata(from: url)
-            loadedData = data
+            var data = try await ShortcutService.shared.fetchMetadata(from: url)
 
-            // Load icon if available
+            // Load icon if available and add it to data
             if let iconURL = data.iconURL {
-                loadedIcon = await ShortcutService.shared.fetchIcon(from: iconURL)
+                let icon = await ShortcutService.shared.fetchIcon(from: iconURL)
+                data = data.with(icon: icon)
             }
+
+            loadedData = data
         } catch {
             print("Failed to fetch shortcut metadata: \(error)")
         }
@@ -355,8 +395,8 @@ extension View {
         name: "Custom Action",
         systemImage: "hand.tap",
         url: "https://www.icloud.com/shortcuts/f00836becd2845109809720d2a70e32f"
-    ) { url in
-        print("Custom tap: \(url)")
+    ) { url, data in
+        print("Custom tap: \(url), data: \(String(describing: data))")
     }
     .foregroundStyle(ShortcutGradient.purple)
     .frame(width: 160, height: 110)

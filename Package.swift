@@ -18,9 +18,15 @@ let package = Package(
             targets: ["SwiftShortcuts"]
         ),
     ],
+    dependencies: [
+        .package(url: "https://github.com/Aeastr/Conditionals.git", .upToNextMajor(from: "1.2.1")),
+    ],
     targets: [
         .target(
             name: "SwiftShortcuts",
+            dependencies: [
+                .product(name: "Conditionals", package: "Conditionals"),
+            ],
             exclude: ["Extensions/ColorExtensions.md"]
         ),
         .executableTarget(

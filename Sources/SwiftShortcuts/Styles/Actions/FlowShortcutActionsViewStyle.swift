@@ -17,23 +17,13 @@ public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
 
     @MainActor
     public func makeBody(configuration: ShortcutActionsViewStyleConfiguration) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if !configuration.shortcutName.isEmpty {
-                makeHeader(configuration: configuration)
-                Divider()
-            }
-
-            if configuration.isLoading {
-                makeLoadingState()
-            } else if configuration.actions.isEmpty {
-                makeEmptyState()
-            } else {
-                makeActionList(configuration: configuration)
-                    .padding()
-            }
+        if configuration.isLoading {
+            makeLoadingState()
+        } else if configuration.actions.isEmpty {
+            makeEmptyState()
+        } else {
+            makeActionList(configuration: configuration)
         }
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Node (Protocol Override)

@@ -35,22 +35,60 @@ struct CloudKitResponse: Codable {
 
 // MARK: - Fetched Shortcut Data
 
-struct ShortcutData: Sendable {
-    let id: String
-    let name: String
-    let iconColor: Int64
-    let iconGlyph: Int64
-    let iconURL: String?
-    let shortcutURL: String?
-    let iCloudLink: String
+/// Data fetched from the iCloud Shortcuts API.
+public struct ShortcutData: Sendable, Identifiable {
+    public let id: String
+    public let name: String
+    public let iconColor: Int64
+    public let iconGlyph: Int64
+    public let iconURL: String?
+    public let shortcutURL: String?
+    public let iCloudLink: String
 
-    var gradient: LinearGradient {
+    /// The loaded icon image (nil until fetched)
+    public let icon: Image?
+
+    public var gradient: LinearGradient {
         ShortcutColors.gradient(for: iconColor)
     }
 
     /// The SF Symbol name for this shortcut's glyph
-    var glyphSymbol: String? {
+    public var glyphSymbol: String? {
         GlyphMappings.symbol(for: iconGlyph)
+    }
+
+    public init(
+        id: String,
+        name: String,
+        iconColor: Int64,
+        iconGlyph: Int64,
+        iconURL: String?,
+        shortcutURL: String?,
+        iCloudLink: String,
+        icon: Image? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.iconColor = iconColor
+        self.iconGlyph = iconGlyph
+        self.iconURL = iconURL
+        self.shortcutURL = shortcutURL
+        self.iCloudLink = iCloudLink
+        self.icon = icon
+    }
+
+    /// Returns a copy of this data with the icon set
+    public func with(icon: Image?) -> ShortcutData {
+        ShortcutData(
+            id: id,
+            name: name,
+            iconColor: iconColor,
+            iconGlyph: iconGlyph,
+            iconURL: iconURL,
+            shortcutURL: shortcutURL,
+            iCloudLink: iCloudLink,
+            icon: icon
+        )
     }
 }
 
