@@ -1,0 +1,106 @@
+{
+  "fill" : {
+    "automatic-gradient" : "display-p3:0.62747,0.22919,0.78590,1.00000"
+  },
+  "groups" : [
+    {
+      "blur-material" : 0.15,
+      "hidden" : false,
+      "layers" : [
+        {
+          "image-name-specializations" : [
+            {
+              "value" : "3.topshape.mono_unspecified_unspecified_automatic.svg"
+            },
+            {
+              "idiom" : "square",
+              "value" : "3.topshape.mono_unspecified_unspecified_automatic.svg"
+            }
+          ],
+          "name" : "3.topshape.mono_unspecified_unspecified_automatic"
+        },
+        {
+          "hidden" : false,
+          "image-name-specializations" : [
+            {
+              "value" : "2.bottomshape.mono_unspecified_unspecified_automatic 2.svg"
+            },
+            {
+              "idiom" : "square",
+              "value" : "2.bottomshape.mono_unspecified_unspecified_automatic 2.svg"
+            }
+          ],
+          "name" : "2.bottomshape.mono_unspecified_unspecified_automatic 2"
+        }
+      ],
+      "lighting" : "individual",
+      "opacity" : 0.8,
+      "position-specializations" : [
+        {
+          "value" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "idiom" : "square",
+          "value" : {
+            "scale" : 1.08,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.6
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.4
+      }
+    },
+    {
+      "blur-material" : null,
+      "hidden" : false,
+      "layers" : [
+        {
+          "fill" : {
+            "solid" : "extended-gray:1.00000,1.00000"
+          },
+          "hidden" : false,
+          "image-name" : "Grid.png",
+          "name" : "Grid",
+          "opacity" : 0.2,
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "none",
+        "opacity" : 0.5
+      },
+      "specular" : false,
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
