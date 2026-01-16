@@ -5,6 +5,25 @@
 
 import SwiftUI
 
+/// Errors that can occur when interacting with a shortcut tile.
+public enum ShortcutTileError: LocalizedError {
+    case invalidURL(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "Unable to Open Shortcut"
+        }
+    }
+
+    public var failureReason: String? {
+        switch self {
+        case .invalidURL(let urlString):
+            return "The shortcut URL is invalid: \(urlString)"
+        }
+    }
+}
+
 /// A tile view that displays an Apple Shortcut with its icon, name, and gradient background.
 ///
 /// You can create a tile in two ways:
@@ -48,6 +67,7 @@ public struct ShortcutTile: View {
     // State for URL-based loading
     @State private var loadedData: ShortcutData?
     @State private var isLoading = false
+    @State private var error: ShortcutTileError?
     
     // MARK: - URL-based Initializers
     
@@ -93,7 +113,7 @@ public struct ShortcutTile: View {
     
     public var body: some View {
         let configuration = makeConfiguration()
-        
+
         Button {
             performAction(with: configuration)
         } label: {
@@ -102,6 +122,16 @@ public struct ShortcutTile: View {
         .buttonStyle(TileButtonStyle(baseConfiguration: configuration, style: style))
         .task {
             await loadDataIfNeeded()
+        }
+        .alert(isPresented: .init(
+            get: { error != nil },
+            set: { if !$0 { error = nil } }
+        ), error: error) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { error in
+            if let reason = error.failureReason {
+                Text(reason)
+            }
         }
     }
     
@@ -147,6 +177,7 @@ public struct ShortcutTile: View {
     
     private func openShortcut(url urlString: String) {
         guard let url = URL(string: urlString) else {
+            error = .invalidURL(urlString)
             return
         }
         openURL(url)
