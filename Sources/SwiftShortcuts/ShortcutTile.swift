@@ -146,12 +146,10 @@ public struct ShortcutTile: View {
     }
     
     private func openShortcut(url urlString: String) {
-        guard let url = URL(string: urlString),
-              !url.lastPathComponent.isEmpty,
-              let shortcutsURL = URL(string: "shortcuts://open-shortcut?id=\(url.lastPathComponent)") else {
+        guard let url = URL(string: urlString) else {
             return
         }
-        openURL(shortcutsURL)
+        openURL(url)
     }
     
     private func loadDataIfNeeded() async {
