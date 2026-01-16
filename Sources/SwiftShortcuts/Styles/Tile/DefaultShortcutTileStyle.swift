@@ -14,7 +14,12 @@ public struct DefaultShortcutTileStyle: ShortcutTileStyle {
         VStack(alignment: .leading, spacing: 5) {
             // Icon in top-left (SF Symbol is primary, pre-rendered image is fallback)
             Group {
-                if let icon = configuration.icon {
+                if configuration.hasError {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(.white.opacity(0.8))
+                } else if let icon = configuration.icon {
                     Image(systemName: icon)
                         .resizable()
                         .scaledToFit()
@@ -36,6 +41,13 @@ public struct DefaultShortcutTileStyle: ShortcutTileStyle {
                 if configuration.isLoading {
                     ProgressView()
                         .tint(.white)
+                } else if configuration.hasError {
+                    Text("Failed to load")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white.opacity(0.8))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
                 } else {
                     Text(configuration.name)
                         .font(.body)
@@ -49,7 +61,9 @@ public struct DefaultShortcutTileStyle: ShortcutTileStyle {
         }
         .padding(14)
         .background {
-            if let gradient = configuration.gradient {
+            if configuration.hasError {
+                RoundedRectangle(cornerRadius: 20).fill(Color.gray.opacity(0.6))
+            } else if let gradient = configuration.gradient {
                 RoundedRectangle(cornerRadius: 20).fill(gradient)
             } else {
                 RoundedRectangle(cornerRadius: 20).fill(.primary)

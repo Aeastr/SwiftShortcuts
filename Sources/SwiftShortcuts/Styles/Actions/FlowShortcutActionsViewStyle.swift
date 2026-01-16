@@ -15,18 +15,20 @@ public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
     private let indentWidth: CGFloat = 20
     
     // MARK: - Body
-    
+
     @MainActor
     public func makeBody(configuration: ShortcutActionsViewStyleConfiguration) -> some View {
         if configuration.isLoading {
             makeLoadingState()
+        } else if configuration.hasError {
+            makeErrorState(configuration: configuration)
         } else if configuration.actions.isEmpty {
             makeEmptyState()
         } else {
             VStack(spacing: 8) {
                 ForEach(Array(configuration.actions.enumerated()), id: \.element.id) { index, action in
                     let indentLevel = calculateIndentLevel(actions: configuration.actions, upTo: index)
-                    
+
                     // Skip end markers
                     if action.controlFlowMode != .end {
                         ActionBlockView(action: action, gradient: configuration.gradient)
@@ -35,6 +37,28 @@ public struct FlowShortcutActionsViewStyle: ShortcutActionsViewStyle {
                 }
             }
         }
+    }
+
+    @MainActor @ViewBuilder
+    private func makeErrorState(configuration: ShortcutActionsViewStyleConfiguration) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 32))
+                .foregroundStyle(.secondary)
+
+            Text(configuration.error?.errorDescription ?? "Failed to load actions")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+
+            if let failureReason = configuration.error?.failureReason {
+                Text(failureReason)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
     }
     
     // MARK: - Indent Calculation

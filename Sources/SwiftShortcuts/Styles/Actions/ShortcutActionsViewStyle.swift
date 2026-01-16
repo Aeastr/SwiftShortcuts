@@ -145,13 +145,20 @@ public struct ShortcutActionsViewStyleConfiguration: Sendable {
     /// Whether the view is currently loading.
     public let isLoading: Bool
 
+    /// The error that occurred, if any.
+    public let error: ShortcutError?
+
+    /// Whether the view has an error.
+    public var hasError: Bool { error != nil }
+
     public init(
         shortcutName: String,
         icon: String? = nil,
         image: Image? = nil,
         actions: [WorkflowAction],
         gradient: LinearGradient?,
-        isLoading: Bool
+        isLoading: Bool,
+        error: ShortcutError? = nil
     ) {
         self.shortcutName = shortcutName
         self.icon = icon
@@ -159,6 +166,7 @@ public struct ShortcutActionsViewStyleConfiguration: Sendable {
         self.actions = actions
         self.gradient = gradient
         self.isLoading = isLoading
+        self.error = error
     }
 }
 

@@ -20,6 +20,7 @@ import SwiftUI
 /// Apply custom styles using the `.shortcutActionsViewStyle()` modifier.
 public struct ShortcutActionsView: View {
     @Environment(\.shortcutActionsViewStyle) private var style
+    @Environment(\.shortcutErrorHandler) private var errorHandler
 
     // Source of data
     private enum DataSource {
@@ -34,6 +35,7 @@ public struct ShortcutActionsView: View {
     @State private var fetchedData: ShortcutData?
     @State private var fetchedActions: [WorkflowAction] = []
     @State private var isLoading = false
+    @State private var error: ShortcutError?
 
     // Computed properties resolve the right data based on source
     private var effectiveData: ShortcutData? {
@@ -95,7 +97,8 @@ public struct ShortcutActionsView: View {
             image: effectiveData?.image,
             actions: effectiveActions,
             gradient: effectiveData?.gradient,
-            isLoading: isLoading
+            isLoading: isLoading,
+            error: error
         )
 
         AnyView(style.makeBody(configuration: configuration))
@@ -144,8 +147,10 @@ public struct ShortcutActionsView: View {
             if let shortcutURL = data.shortcutURL {
                 fetchedActions = try await ShortcutService.shared.fetchWorkflowActions(from: shortcutURL)
             }
+        } catch let shortcutError as ShortcutError {
+            handleError(shortcutError, url: url)
         } catch {
-            print("Failed to fetch shortcut actions: \(error)")
+            handleError(.metadataFetchFailed(url: url, underlying: error), url: url)
         }
     }
 
@@ -157,8 +162,18 @@ public struct ShortcutActionsView: View {
 
         do {
             fetchedActions = try await ShortcutService.shared.fetchWorkflowActions(from: shortcutURL)
+        } catch let shortcutError as ShortcutError {
+            handleError(shortcutError, url: shortcutURL)
         } catch {
-            print("Failed to fetch workflow actions: \(error)")
+            handleError(.actionsFetchFailed(url: shortcutURL, underlying: error), url: shortcutURL)
+        }
+    }
+
+    private func handleError(_ shortcutError: ShortcutError, url: String) {
+        if let errorHandler {
+            errorHandler(error: shortcutError, context: ShortcutErrorContext(source: .actions, url: url))
+        } else {
+            error = shortcutError
         }
     }
 }

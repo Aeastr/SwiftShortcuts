@@ -28,6 +28,7 @@ import Conditionals
 public struct ShortcutDetailView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.shortcutErrorHandler) private var errorHandler
 
     // Source of data
     private enum DataSource {
@@ -41,6 +42,7 @@ public struct ShortcutDetailView: View {
     @State private var shortcutData: ShortcutData?
     @State private var fetchedActions: [WorkflowAction] = []
     @State private var isLoading = false
+    @State private var error: ShortcutError?
 
     private var effectiveActions: [WorkflowAction] {
         switch dataSource {
@@ -97,7 +99,26 @@ public struct ShortcutDetailView: View {
     public var body: some View {
         NavigationStack {
             Group {
-                if let data = shortcutData {
+                if let error, shortcutData == nil {
+                    // Error state when we couldn't load data
+                    VStack(spacing: 16) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.secondary)
+
+                        Text(error.errorDescription ?? "Failed to load shortcut")
+                            .font(.headline)
+
+                        if let reason = error.failureReason {
+                            Text(reason)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let data = shortcutData {
                     ScrollView {
                         // Pass pre-loaded data to children - NO redundant fetching
                         ShortcutTile(data: data)
@@ -207,8 +228,10 @@ public struct ShortcutDetailView: View {
             if let shortcutURL = data.shortcutURL {
                 fetchedActions = try await ShortcutService.shared.fetchWorkflowActions(from: shortcutURL)
             }
+        } catch let shortcutError as ShortcutError {
+            handleError(shortcutError, url: url)
         } catch {
-            print("Failed to fetch shortcut data: \(error)")
+            handleError(.metadataFetchFailed(url: url, underlying: error), url: url)
         }
     }
 
@@ -220,8 +243,18 @@ public struct ShortcutDetailView: View {
 
         do {
             fetchedActions = try await ShortcutService.shared.fetchWorkflowActions(from: shortcutURL)
+        } catch let shortcutError as ShortcutError {
+            handleError(shortcutError, url: shortcutURL)
         } catch {
-            print("Failed to fetch workflow actions: \(error)")
+            handleError(.actionsFetchFailed(url: shortcutURL, underlying: error), url: shortcutURL)
+        }
+    }
+
+    private func handleError(_ shortcutError: ShortcutError, url: String) {
+        if let errorHandler {
+            errorHandler(error: shortcutError, context: ShortcutErrorContext(source: .detail, url: url))
+        } else {
+            error = shortcutError
         }
     }
 
