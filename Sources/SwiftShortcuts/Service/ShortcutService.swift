@@ -11,6 +11,12 @@ import Foundation
 struct CloudKitResponse: Codable {
     let recordName: String
     let fields: Fields
+    let created: Timestamp?
+    let modified: Timestamp?
+
+    struct Timestamp: Codable {
+        let timestamp: Int64
+    }
 
     struct Fields: Codable {
         let name: ValueWrapper<String>
@@ -18,6 +24,7 @@ struct CloudKitResponse: Codable {
         let icon_glyph: ValueWrapper<Int64>
         let icon: AssetField?
         let shortcut: AssetField?
+        let signingStatus: ValueWrapper<String>?
 
         struct ValueWrapper<T: Codable>: Codable {
             let value: T
@@ -48,6 +55,18 @@ public struct ShortcutData: Sendable, Identifiable, Codable {
     /// The loaded pre-rendered image (nil until fetched)
     public let image: Image?
 
+    /// When the shortcut was created
+    public let createdAt: Date?
+
+    /// When the shortcut was last modified
+    public let modifiedAt: Date?
+
+    /// The signing status (e.g., "APPROVED")
+    public let signingStatus: String?
+
+    /// Number of actions in the shortcut (fetched separately)
+    public let actionCount: Int?
+
     public var gradient: LinearGradient {
         ShortcutColors.gradient(for: iconColor)
     }
@@ -55,6 +74,11 @@ public struct ShortcutData: Sendable, Identifiable, Codable {
     /// The SF Symbol name for this shortcut's icon
     public var icon: String? {
         GlyphMappings.symbol(for: iconGlyph)
+    }
+
+    /// Whether the shortcut is approved/signed
+    public var isApproved: Bool {
+        signingStatus == "APPROVED"
     }
 
     public init(
@@ -65,7 +89,11 @@ public struct ShortcutData: Sendable, Identifiable, Codable {
         iconURL: String?,
         shortcutURL: String?,
         iCloudLink: String,
-        image: Image? = nil
+        image: Image? = nil,
+        createdAt: Date? = nil,
+        modifiedAt: Date? = nil,
+        signingStatus: String? = nil,
+        actionCount: Int? = nil
     ) {
         self.id = id
         self.name = name
@@ -75,6 +103,10 @@ public struct ShortcutData: Sendable, Identifiable, Codable {
         self.shortcutURL = shortcutURL
         self.iCloudLink = iCloudLink
         self.image = image
+        self.createdAt = createdAt
+        self.modifiedAt = modifiedAt
+        self.signingStatus = signingStatus
+        self.actionCount = actionCount
     }
 
     /// Returns a copy of this data with the image set
@@ -87,7 +119,29 @@ public struct ShortcutData: Sendable, Identifiable, Codable {
             iconURL: iconURL,
             shortcutURL: shortcutURL,
             iCloudLink: iCloudLink,
-            image: image
+            image: image,
+            createdAt: createdAt,
+            modifiedAt: modifiedAt,
+            signingStatus: signingStatus,
+            actionCount: actionCount
+        )
+    }
+
+    /// Returns a copy of this data with the action count set
+    public func with(actionCount: Int?) -> ShortcutData {
+        ShortcutData(
+            id: id,
+            name: name,
+            iconColor: iconColor,
+            iconGlyph: iconGlyph,
+            iconURL: iconURL,
+            shortcutURL: shortcutURL,
+            iCloudLink: iCloudLink,
+            image: image,
+            createdAt: createdAt,
+            modifiedAt: modifiedAt,
+            signingStatus: signingStatus,
+            actionCount: actionCount
         )
     }
 
@@ -101,6 +155,10 @@ public struct ShortcutData: Sendable, Identifiable, Codable {
         case iconURL = "icon_url"
         case shortcutURL = "shortcut_url"
         case iCloudLink = "i_cloud_link"
+        case createdAt = "created_at"
+        case modifiedAt = "modified_at"
+        case signingStatus = "signing_status"
+        case actionCount = "action_count"
     }
 
     public init(from decoder: Decoder) throws {
@@ -112,6 +170,10 @@ public struct ShortcutData: Sendable, Identifiable, Codable {
         iconURL = try container.decodeIfPresent(String.self, forKey: .iconURL)
         shortcutURL = try container.decodeIfPresent(String.self, forKey: .shortcutURL)
         iCloudLink = try container.decode(String.self, forKey: .iCloudLink)
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        modifiedAt = try container.decodeIfPresent(Date.self, forKey: .modifiedAt)
+        signingStatus = try container.decodeIfPresent(String.self, forKey: .signingStatus)
+        actionCount = try container.decodeIfPresent(Int.self, forKey: .actionCount)
         image = nil
     }
 
@@ -124,6 +186,10 @@ public struct ShortcutData: Sendable, Identifiable, Codable {
         try container.encodeIfPresent(iconURL, forKey: .iconURL)
         try container.encodeIfPresent(shortcutURL, forKey: .shortcutURL)
         try container.encode(iCloudLink, forKey: .iCloudLink)
+        try container.encodeIfPresent(createdAt, forKey: .createdAt)
+        try container.encodeIfPresent(modifiedAt, forKey: .modifiedAt)
+        try container.encodeIfPresent(signingStatus, forKey: .signingStatus)
+        try container.encodeIfPresent(actionCount, forKey: .actionCount)
     }
 
     // MARK: - Loading from JSON
@@ -159,25 +225,47 @@ struct ShortcutService: Sendable {
     /// Maximum length for action subtitles. Set to `nil` for no limit (default).
     nonisolated(unsafe) static var maxSubtitleLength: Int? = nil
 
-    func fetchMetadata(from iCloudLink: String) async throws -> ShortcutData {
+    func fetchMetadata(from iCloudLink: String) async throws(ShortcutError) -> ShortcutData {
         guard let shortcutID = extractShortcutID(from: iCloudLink) else {
-            throw URLError(.badURL)
+            throw .invalidURL(iCloudLink)
         }
 
         let apiURL = "https://www.icloud.com/shortcuts/api/records/\(shortcutID)"
 
         guard let url = URL(string: apiURL) else {
-            throw URLError(.badURL)
+            throw .invalidURL(apiURL)
         }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let data: Data
+        let response: URLResponse
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw URLError(.badServerResponse)
+        do {
+            (data, response) = try await URLSession.shared.data(from: url)
+        } catch {
+            throw .networkError(underlying: error)
         }
 
-        let cloudKitResponse = try JSONDecoder().decode(CloudKitResponse.self, from: data)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw .invalidResponse(statusCode: nil)
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            if httpResponse.statusCode == 404 {
+                throw .resourceNotFound(resource: shortcutID)
+            }
+            throw .invalidResponse(statusCode: httpResponse.statusCode)
+        }
+
+        let cloudKitResponse: CloudKitResponse
+        do {
+            cloudKitResponse = try JSONDecoder().decode(CloudKitResponse.self, from: data)
+        } catch {
+            throw .decodingFailed(underlying: error)
+        }
+
+        // Parse timestamps (milliseconds since 1970)
+        let createdAt = cloudKitResponse.created.map { Date(timeIntervalSince1970: Double($0.timestamp) / 1000) }
+        let modifiedAt = cloudKitResponse.modified.map { Date(timeIntervalSince1970: Double($0.timestamp) / 1000) }
 
         return ShortcutData(
             id: cloudKitResponse.recordName,
@@ -186,8 +274,71 @@ struct ShortcutService: Sendable {
             iconGlyph: cloudKitResponse.fields.icon_glyph.value,
             iconURL: cloudKitResponse.fields.icon?.value.downloadURL,
             shortcutURL: constructAssetURL(cloudKitResponse.fields.shortcut?.value.downloadURL),
-            iCloudLink: normalizeShortcutURL(iCloudLink)
+            iCloudLink: normalizeShortcutURL(iCloudLink),
+            createdAt: createdAt,
+            modifiedAt: modifiedAt,
+            signingStatus: cloudKitResponse.fields.signingStatus?.value
         )
+    }
+
+    /// Fetches metadata for multiple shortcuts in parallel.
+    ///
+    /// Each result is independent - failures don't affect other fetches.
+    /// Results are returned in the same order as the input URLs.
+    ///
+    /// - Parameter urls: The iCloud share URLs to fetch
+    /// - Returns: An array of results, one for each input URL
+    func fetchMetadata(from urls: [String]) async -> [Result<ShortcutData, ShortcutError>] {
+        await withTaskGroup(of: (Int, Result<ShortcutData, ShortcutError>).self) { group in
+            for (index, url) in urls.enumerated() {
+                group.addTask {
+                    do {
+                        let data = try await self.fetchMetadata(from: url)
+                        return (index, .success(data))
+                    } catch let shortcutError as ShortcutError {
+                        return (index, .failure(shortcutError))
+                    } catch {
+                        return (index, .failure(.metadataFetchFailed(url: url, underlying: error)))
+                    }
+                }
+            }
+
+            var results = Array(repeating: Result<ShortcutData, ShortcutError>.failure(.invalidURL("")), count: urls.count)
+            for await (index, result) in group {
+                results[index] = result
+            }
+            return results
+        }
+    }
+
+    /// Fetches shortcut metadata and its image in one call.
+    ///
+    /// - Parameter url: The iCloud share URL
+    /// - Returns: The shortcut data with image loaded
+    func fetchShortcutWithImage(from url: String) async throws(ShortcutError) -> ShortcutData {
+        var data = try await fetchMetadata(from: url)
+
+        if let iconURL = data.iconURL {
+            let image = await fetchImage(from: iconURL)
+            data = data.with(image: image)
+        }
+
+        return data
+    }
+
+    /// Fetches shortcut metadata, image, and workflow actions in one call.
+    ///
+    /// - Parameter url: The iCloud share URL
+    /// - Returns: A tuple containing the shortcut data and its actions
+    func fetchComplete(from url: String) async throws(ShortcutError) -> (data: ShortcutData, actions: [WorkflowAction]) {
+        let data = try await fetchShortcutWithImage(from: url)
+
+        var actions: [WorkflowAction] = []
+        if let shortcutURL = data.shortcutURL {
+            actions = try await fetchWorkflowActions(from: shortcutURL)
+        }
+
+        return (data, actions)
     }
 
     func fetchImage(from urlString: String) async -> Image? {
@@ -210,19 +361,33 @@ struct ShortcutService: Sendable {
         return nil
     }
 
-    func fetchWorkflowActions(from urlString: String) async throws -> [WorkflowAction] {
+    func fetchWorkflowActions(from urlString: String) async throws(ShortcutError) -> [WorkflowAction] {
         guard let url = URL(string: urlString) else {
-            throw URLError(.badURL)
+            throw .invalidURL(urlString)
         }
 
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let data: Data
 
-        guard let plist = try PropertyListSerialization.propertyList(
-            from: data,
-            options: [],
-            format: nil
-        ) as? [String: Any] else {
-            throw URLError(.cannotParseResponse)
+        do {
+            (data, _) = try await URLSession.shared.data(from: url)
+        } catch {
+            throw .networkError(underlying: error)
+        }
+
+        let plist: [String: Any]
+        do {
+            guard let parsed = try PropertyListSerialization.propertyList(
+                from: data,
+                options: [],
+                format: nil
+            ) as? [String: Any] else {
+                throw ShortcutError.parsingFailed(reason: "Response is not a valid property list dictionary")
+            }
+            plist = parsed
+        } catch let error as ShortcutError {
+            throw error
+        } catch {
+            throw .parsingFailed(reason: "Failed to parse property list: \(error.localizedDescription)")
         }
 
         guard let actions = plist["WFWorkflowActions"] as? [[String: Any]] else {
@@ -247,6 +412,45 @@ struct ShortcutService: Sendable {
 
             return WorkflowAction(identifier: identifier, controlFlowMode: controlFlowMode, subtitle: subtitle)
         }
+    }
+
+    /// Fetches just the action count from a shortcut plist without parsing all actions.
+    ///
+    /// This is more lightweight than `fetchWorkflowActions` when you only need the count.
+    func fetchActionCount(from urlString: String) async throws(ShortcutError) -> Int {
+        guard let url = URL(string: urlString) else {
+            throw .invalidURL(urlString)
+        }
+
+        let data: Data
+
+        do {
+            (data, _) = try await URLSession.shared.data(from: url)
+        } catch {
+            throw .networkError(underlying: error)
+        }
+
+        let plist: [String: Any]
+        do {
+            guard let parsed = try PropertyListSerialization.propertyList(
+                from: data,
+                options: [],
+                format: nil
+            ) as? [String: Any] else {
+                throw ShortcutError.parsingFailed(reason: "Response is not a valid property list dictionary")
+            }
+            plist = parsed
+        } catch let error as ShortcutError {
+            throw error
+        } catch {
+            throw .parsingFailed(reason: "Failed to parse property list: \(error.localizedDescription)")
+        }
+
+        guard let actions = plist["WFWorkflowActions"] as? [[String: Any]] else {
+            return 0
+        }
+
+        return actions.count
     }
 
     private func extractShortcutID(from link: String) -> String? {

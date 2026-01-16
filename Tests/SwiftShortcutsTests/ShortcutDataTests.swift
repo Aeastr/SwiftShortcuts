@@ -90,6 +90,37 @@ struct ShortcutDataTests {
         #expect(shortcuts.count == 1)
         #expect(shortcuts[0].iconURL == nil)
         #expect(shortcuts[0].shortcutURL == nil)
+        #expect(shortcuts[0].createdAt == nil)
+        #expect(shortcuts[0].modifiedAt == nil)
+        #expect(shortcuts[0].signingStatus == nil)
+        #expect(shortcuts[0].actionCount == nil)
+    }
+
+    @Test("Decodes new metadata fields from JSON")
+    func decodeMetadataFields() throws {
+        let json = """
+        {
+            "id": "ABC123",
+            "name": "Full Metadata Shortcut",
+            "icon_color": 463140863,
+            "icon_glyph": 59446,
+            "i_cloud_link": "https://www.icloud.com/shortcuts/ABC123",
+            "created_at": "2025-01-15T10:30:00Z",
+            "modified_at": "2025-01-16T14:45:00Z",
+            "signing_status": "APPROVED",
+            "action_count": 12
+        }
+        """
+
+        let data = try #require(json.data(using: .utf8))
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let shortcut = try decoder.decode(ShortcutData.self, from: data)
+
+        #expect(shortcut.createdAt != nil)
+        #expect(shortcut.modifiedAt != nil)
+        #expect(shortcut.signingStatus == "APPROVED")
+        #expect(shortcut.actionCount == 12)
     }
 
     // MARK: - JSON Encoding
@@ -169,6 +200,54 @@ struct ShortcutDataTests {
         #expect(shortcut.icon == nil)
     }
 
+    @Test("isApproved returns true for APPROVED status")
+    func isApprovedTrue() {
+        let shortcut = ShortcutData(
+            id: "TEST",
+            name: "Test",
+            iconColor: 463140863,
+            iconGlyph: 59446,
+            iconURL: nil,
+            shortcutURL: nil,
+            iCloudLink: "https://www.icloud.com/shortcuts/TEST",
+            signingStatus: "APPROVED"
+        )
+
+        #expect(shortcut.isApproved == true)
+    }
+
+    @Test("isApproved returns false for other status")
+    func isApprovedFalse() {
+        let shortcut = ShortcutData(
+            id: "TEST",
+            name: "Test",
+            iconColor: 463140863,
+            iconGlyph: 59446,
+            iconURL: nil,
+            shortcutURL: nil,
+            iCloudLink: "https://www.icloud.com/shortcuts/TEST",
+            signingStatus: "PENDING"
+        )
+
+        #expect(shortcut.isApproved == false)
+    }
+
+    @Test("isApproved returns false for nil status")
+    func isApprovedNil() {
+        let shortcut = ShortcutData(
+            id: "TEST",
+            name: "Test",
+            iconColor: 463140863,
+            iconGlyph: 59446,
+            iconURL: nil,
+            shortcutURL: nil,
+            iCloudLink: "https://www.icloud.com/shortcuts/TEST",
+            signingStatus: nil
+        )
+
+        #expect(shortcut.isApproved == false)
+    }
+
     // MARK: - with(image:)
 
     @Test("Creates copy with image using with(image:)")
@@ -189,5 +268,62 @@ struct ShortcutDataTests {
         let withNilImage = original.with(image: nil)
         #expect(withNilImage.id == original.id)
         #expect(withNilImage.name == original.name)
+    }
+
+    // MARK: - with(actionCount:)
+
+    @Test("Creates copy with action count using with(actionCount:)")
+    func withActionCount() {
+        let original = ShortcutData(
+            id: "TEST",
+            name: "Test",
+            iconColor: 463140863,
+            iconGlyph: 59446,
+            iconURL: nil,
+            shortcutURL: nil,
+            iCloudLink: "https://www.icloud.com/shortcuts/TEST",
+            createdAt: Date(),
+            signingStatus: "APPROVED"
+        )
+
+        #expect(original.actionCount == nil)
+
+        let withCount = original.with(actionCount: 15)
+        #expect(withCount.actionCount == 15)
+        #expect(withCount.id == original.id)
+        #expect(withCount.name == original.name)
+        #expect(withCount.signingStatus == original.signingStatus)
+        #expect(withCount.createdAt == original.createdAt)
+    }
+
+    // MARK: - Metadata Round-Trip
+
+    @Test("Round-trips metadata fields through JSON encoding/decoding")
+    func roundTripMetadata() throws {
+        let testDate = Date(timeIntervalSince1970: 1705320000) // Fixed date for testing
+        let original = ShortcutData(
+            id: "TEST123",
+            name: "Metadata Round Trip",
+            iconColor: 463140863,
+            iconGlyph: 59446,
+            iconURL: nil,
+            shortcutURL: nil,
+            iCloudLink: "https://www.icloud.com/shortcuts/TEST123",
+            createdAt: testDate,
+            modifiedAt: testDate,
+            signingStatus: "APPROVED",
+            actionCount: 42
+        )
+
+        let encoder = JSONEncoder()
+        let encoded = try encoder.encode(original)
+
+        let decoder = JSONDecoder()
+        let decoded = try decoder.decode(ShortcutData.self, from: encoded)
+
+        #expect(decoded.createdAt == original.createdAt)
+        #expect(decoded.modifiedAt == original.modifiedAt)
+        #expect(decoded.signingStatus == original.signingStatus)
+        #expect(decoded.actionCount == original.actionCount)
     }
 }

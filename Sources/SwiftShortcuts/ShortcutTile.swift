@@ -6,23 +6,8 @@
 import SwiftUI
 
 /// Errors that can occur when interacting with a shortcut tile.
-public enum ShortcutTileError: LocalizedError {
-    case invalidURL(String)
-
-    public var errorDescription: String? {
-        switch self {
-        case .invalidURL:
-            return "Unable to Open Shortcut"
-        }
-    }
-
-    public var failureReason: String? {
-        switch self {
-        case .invalidURL(let urlString):
-            return "The shortcut URL is invalid: \(urlString)"
-        }
-    }
-}
+@available(*, deprecated, renamed: "ShortcutError")
+public typealias ShortcutTileError = ShortcutError
 
 /// A tile view that displays an Apple Shortcut with its icon, name, and gradient background.
 ///
@@ -49,6 +34,7 @@ public enum ShortcutTileError: LocalizedError {
 public struct ShortcutTile: View {
     @Environment(\.shortcutTileStyle) private var style
     @Environment(\.shortcutLoadingStagger) private var stagger
+    @Environment(\.shortcutErrorHandler) private var errorHandler
     @Environment(\.openURL) private var openURL
     
     // Source of data
@@ -67,7 +53,7 @@ public struct ShortcutTile: View {
     // State for URL-based loading
     @State private var loadedData: ShortcutData?
     @State private var isLoading = false
-    @State private var error: ShortcutTileError?
+    @State private var error: ShortcutError?
     
     // MARK: - URL-based Initializers
     
@@ -123,16 +109,6 @@ public struct ShortcutTile: View {
         .task {
             await loadDataIfNeeded()
         }
-        .alert(isPresented: .init(
-            get: { error != nil },
-            set: { if !$0 { error = nil } }
-        ), error: error) { _ in
-            Button("OK", role: .cancel) {}
-        } message: { error in
-            if let reason = error.failureReason {
-                Text(reason)
-            }
-        }
     }
     
     // MARK: - Private Helpers
@@ -146,9 +122,10 @@ public struct ShortcutTile: View {
                 image: loadedData?.image,
                 gradient: loadedData?.gradient,
                 isLoading: isLoading,
-                url: url
+                url: url,
+                error: error
             )
-            
+
         case .preloaded(let data):
             return ShortcutTileStyleConfiguration(
                 name: data.name,
@@ -177,36 +154,47 @@ public struct ShortcutTile: View {
     
     private func openShortcut(url urlString: String) {
         guard let url = URL(string: urlString) else {
-            error = .invalidURL(urlString)
+            handleError(.invalidURL(urlString), url: urlString)
             return
         }
         openURL(url)
+    }
+
+    private func handleError(_ shortcutError: ShortcutError, url: String) {
+        if let errorHandler {
+            errorHandler(error: shortcutError, context: ShortcutErrorContext(source: .tile, url: url))
+        } else {
+            // Store error for visual display when no handler is set
+            error = shortcutError
+        }
     }
     
     private func loadDataIfNeeded() async {
         // Only load for URL-based data source
         guard case .url(let url) = dataSource else { return }
-        
+
         isLoading = true
         defer { isLoading = false }
-        
+
         // Stagger requests when displaying multiple tiles
         if let stagger {
             try? await Task.sleep(nanoseconds: UInt64.random(in: stagger))
         }
-        
+
         do {
             var data = try await ShortcutService.shared.fetchMetadata(from: url)
-            
+
             // Load image if available and add it to data
             if let iconURL = data.iconURL {
                 let image = await ShortcutService.shared.fetchImage(from: iconURL)
                 data = data.with(image: image)
             }
-            
+
             loadedData = data
+        } catch let shortcutError as ShortcutError {
+            handleError(shortcutError, url: url)
         } catch {
-            print("Failed to fetch shortcut metadata: \(error)")
+            handleError(.metadataFetchFailed(url: url, underlying: error), url: url)
         }
     }
 }

@@ -41,6 +41,12 @@ public struct ShortcutTileStyleConfiguration: Sendable {
     /// Whether the tile is currently being pressed
     public let isPressed: Bool
 
+    /// The error that occurred, if any
+    public let error: ShortcutError?
+
+    /// Whether the tile has an error
+    public var hasError: Bool { error != nil }
+
     public init(
         name: String,
         icon: String?,
@@ -48,7 +54,8 @@ public struct ShortcutTileStyleConfiguration: Sendable {
         gradient: LinearGradient?,
         isLoading: Bool,
         url: String,
-        isPressed: Bool = false
+        isPressed: Bool = false,
+        error: ShortcutError? = nil
     ) {
         self.name = name
         self.icon = icon
@@ -57,6 +64,7 @@ public struct ShortcutTileStyleConfiguration: Sendable {
         self.isLoading = isLoading
         self.url = url
         self.isPressed = isPressed
+        self.error = error
     }
 }
 
@@ -89,7 +97,8 @@ struct TileButtonStyle: ButtonStyle {
             gradient: baseConfiguration.gradient,
             isLoading: baseConfiguration.isLoading,
             url: baseConfiguration.url,
-            isPressed: configuration.isPressed
+            isPressed: configuration.isPressed,
+            error: baseConfiguration.error
         )
 
         AnyView(style.makeBody(configuration: tileConfig))
