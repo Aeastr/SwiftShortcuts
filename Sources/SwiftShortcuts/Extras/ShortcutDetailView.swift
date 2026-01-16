@@ -257,12 +257,24 @@ public struct ShortcutDetailView: View {
 private struct ShortcutSummaryRow: View {
     let data: ShortcutData
 
-    private var formattedDate: String? {
-        guard let date = data.createdAt else { return nil }
-
+    private var formatter: RelativeDateTimeFormatter {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
+        return formatter
+    }
+
+    private var formattedCreatedDate: String? {
+        guard let date = data.createdAt else { return nil }
         return formatter.localizedString(for: date, relativeTo: Date())
+    }
+
+    private var formattedModifiedDate: String? {
+        guard let modified = data.modifiedAt,
+              let created = data.createdAt,
+              !Calendar.current.isDate(modified, equalTo: created, toGranularity: .minute) else {
+            return nil
+        }
+        return formatter.localizedString(for: modified, relativeTo: Date())
     }
 
     var body: some View {
@@ -279,12 +291,19 @@ private struct ShortcutSummaryRow: View {
             }
 
             // Creation date
-            if let dateString = formattedDate {
+            if let dateString = formattedCreatedDate {
                 if data.actionCount != nil {
                     Text("•")
                         .foregroundStyle(.tertiary)
                 }
                 Text("Created \(dateString)")
+            }
+
+            // Modified date (only if different from created)
+            if let modifiedString = formattedModifiedDate {
+                Text("•")
+                    .foregroundStyle(.tertiary)
+                Text("Modified \(modifiedString)")
             }
         }
         .font(.subheadline)
