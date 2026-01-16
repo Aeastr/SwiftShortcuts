@@ -132,7 +132,7 @@ ShortcutActionsView(url: "https://www.icloud.com/shortcuts/abc123")
 
 > **Note:** Action name and icon mappings are incomplete. Some actions may display raw identifiers or generic icons. [Contributions welcome!](#action-mappings)
 
-The default style shows actions as rounded blocks with nested control flow (If/Otherwise, Repeat, Menu).
+The default style shows actions as rounded blocks with indentation for control flow (If/Otherwise, Repeat, Menu).
 
 Pass pre-loaded data to avoid redundant fetches:
 
@@ -274,7 +274,7 @@ ID-based and URL-based tiles load asynchronously with configurable staggered req
 Tapping a tile opens the shortcut in the Shortcuts app via the `shortcuts://` URL scheme by default. Pass an action closure to override this behavior - it receives both the URL and the loaded `ShortcutData`.
 
 Built-in tile styles:
-- `DefaultShortcutTileStyle` - 1.5 aspect ratio tile with centered icon and name
+- `DefaultShortcutTileStyle` - Rounded tile with icon in top-left and name at bottom
 - `CompactShortcutTileStyle` - Horizontal row with icon, name, and material background
 
 ### ShortcutDetailView
@@ -287,7 +287,7 @@ Can be initialized with a URL/ID (fetches everything) or with pre-loaded `Shortc
 
 Displays the workflow actions/steps inside a shortcut. Fetches the shortcut's plist data and parses the action list.
 
-The default style (`FlowShortcutActionsViewStyle`) shows actions as rounded blocks matching Apple's Shortcuts app. Control flow actions (Repeat, If, Menu) nest their children inside the block.
+The default style (`FlowShortcutActionsViewStyle`) shows actions as rounded blocks matching Apple's Shortcuts app. Control flow actions (Repeat, If, Menu) use indentation to show nesting.
 
 Apple Shortcuts has hundreds of actions - we can't map them all. Unknown actions fall back to parsing the identifier and showing a generic icon. See [Contributing](#action-mappings) to help expand coverage.
 
@@ -365,7 +365,7 @@ ShortcutTile fetches the glyph ID and resolves it to an SF Symbol. This is the p
 2. **API image** → Falls back to `icon` URL if glyph unmapped
 3. **None** → Shows gradient only if neither available
 
-Custom tile styles receive both `glyphSymbol` and `icon` in the configuration and can choose how to use them.
+Custom tile styles receive both `icon` (the SF Symbol name) and `image` (the fallback pre-rendered image) in the configuration and can choose how to use them.
 
 **Regenerating mappings** (macOS only) - see [docs/CLI.md](docs/CLI.md):
 ```bash
