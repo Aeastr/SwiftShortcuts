@@ -91,17 +91,29 @@ https://www.icloud.com/shortcuts/abc123def456
 
 ## Fields
 
-| Field | Type | Description | Verified |
-|-------|------|-------------|----------|
+| Field | Type | Description | Used |
+|-------|------|-------------|------|
 | `name` | STRING | Display name of the shortcut | Yes |
 | `icon_color` | NUMBER_INT64 | Internal color code (see [Color Codes](#color-codes)) | Yes |
-| `icon_glyph` | NUMBER_INT64 | Unknown - possibly SF Symbol codepoint or internal glyph ID | No |
+| `icon_glyph` | NUMBER_INT64 | SF Symbol glyph ID (see [IconGlyph-Research.md](IconGlyph-Research.md)) | Yes |
 | `icon` | ASSETID | Custom icon image - PNG format (see [Asset Formats](#asset-formats)) | Yes |
 | `shortcut` | ASSETID | The shortcut file - binary plist (see [Asset Formats](#asset-formats)) | Yes |
 | `signedShortcut` | ASSETID | Signed version of the shortcut | No |
-| `signingStatus` | STRING | Signing status, e.g. "APPROVED" | No |
-| `signingCertificateExpirationDate` | TIMESTAMP | Likely signing cert expiration | No |
-| `maliciousScanningContentVersion` | NUMBER_INT64 | Likely malware scan version | No |
+| `signingStatus` | STRING | Signing status, e.g. "APPROVED" | Yes |
+| `signingCertificateExpirationDate` | TIMESTAMP | Signing cert expiration | No |
+| `maliciousScanningContentVersion` | NUMBER_INT64 | Malware scan version | No |
+
+## Timestamps
+
+The `created` and `modified` objects contain:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | NUMBER_INT64 | Milliseconds since Unix epoch |
+| `userRecordName` | STRING | Internal user identifier |
+| `deviceID` | STRING | Device that made the change |
+
+SwiftShortcuts parses `created.timestamp` and `modified.timestamp` into `Date` objects on `ShortcutData`.
 
 ## Color Codes
 

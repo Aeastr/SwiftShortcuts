@@ -30,11 +30,14 @@
 - **Data-based tiles** - Pass pre-loaded `ShortcutData` to avoid redundant fetches
 - **Custom tap actions** - Override default behavior with action closure
 - **Press feedback** - Built-in scale/opacity animations via ButtonStyle
-- **Detail view** - Present shortcut details with actions in a sheet
+- **Detail view** - Present shortcut details with metadata summary in a sheet
+- **Detailed view** - Full workflow actions visualization
 - **Actions view** - Display the workflow steps inside a shortcut
 - **Block style** - Apple-style visualization with nested control flow
 - **15 gradients** - Apple Shortcuts color palette built-in
 - **Tap to open** - Tiles open shortcuts directly in the Shortcuts app
+- **Error handling** - Environment-based error handler with visual fallback states
+- **Bulk loading** - Fetch multiple shortcuts in parallel with per-item error handling
 
 
 ## Requirements
@@ -97,9 +100,47 @@ ShortcutTile(id: "abc123") { url, data in
 }
 ```
 
+### Error Handling
+
+By default, tiles display a visual error state (gray background, warning icon) when loading fails. Use `.onShortcutError` to handle errors yourself:
+
+```swift
+@State private var lastError: ShortcutError?
+
+VStack {
+    ShortcutTile(id: "abc123")
+    ShortcutTile(id: "invalid-id")
+}
+.onShortcutError { error, context in
+    lastError = error
+}
+.alert(item: $lastError) { error in
+    Alert(title: Text(error.errorDescription ?? "Error"))
+}
+```
+
+When an error handler is set, errors are routed to your closure instead of showing visual error states. The `context` provides the source view (`.tile`, `.detail`, `.actions`) and the URL that failed.
+
+### Bulk Loading
+
+Fetch multiple shortcuts in parallel with isolated error handling:
+
+```swift
+let results = await ShortcutService.shared.fetchMetadata(from: urls)
+
+for (url, result) in zip(urls, results) {
+    switch result {
+    case .success(let data):
+        shortcuts.append(data)
+    case .failure(let error):
+        print("Failed to load \(url): \(error.localizedDescription)")
+    }
+}
+```
+
 ### Detail View
 
-Present a sheet with the shortcut tile and its workflow actions:
+Present a sheet with the shortcut tile and metadata summary:
 
 ```swift
 @State private var selectedData: ShortcutData?
@@ -116,6 +157,14 @@ Or fetch everything from a URL:
 
 ```swift
 ShortcutDetailView(url: "https://www.icloud.com/shortcuts/abc123")
+```
+
+The detail view shows a summary line with action count, creation date, and signing status (e.g., "12 actions · Created 2 mo ago · Modified 1 wk ago").
+
+For a full workflow actions visualization, use `ShortcutDetailedView`:
+
+```swift
+ShortcutDetailedView(data: data)  // Full actions flow view
 ```
 
 ### Shortcut Actions (Experimental)
@@ -187,6 +236,7 @@ Create your own styles by conforming to `ShortcutTileStyle`. The configuration p
 - `image` - Pre-rendered image (fallback)
 - `gradient` - The shortcut's gradient colors
 - `isPressed` - For custom press feedback
+- `error` / `hasError` - Error state when loading fails
 
 ```swift
 struct MyTileStyle: ShortcutTileStyle {
@@ -273,15 +323,25 @@ ID-based and URL-based tiles load asynchronously with configurable staggered req
 
 Tapping a tile opens the shortcut in the Shortcuts app via the `shortcuts://` URL scheme by default. Pass an action closure to override this behavior - it receives both the URL and the loaded `ShortcutData`.
 
+When loading fails, tiles display a visual error state (gray background, warning icon, "Failed to load" text) by default. Use `.onShortcutError` to handle errors yourself instead (see [Error Handling](#error-handling)).
+
 Built-in tile styles:
 - `DefaultShortcutTileStyle` - Rounded tile with icon in top-left and name at bottom
 - `CompactShortcutTileStyle` - Horizontal row with icon, name, and material background
 
 ### ShortcutDetailView
 
-Presents a sheet with the shortcut tile and its workflow actions. Includes an "Add Shortcut" button that opens the iCloud link.
+Presents a sheet with the shortcut tile and a metadata summary line showing action count, creation/modification dates, and signing status. Includes an "Add Shortcut" button that opens the iCloud link.
 
 Can be initialized with a URL/ID (fetches everything) or with pre-loaded `ShortcutData` (avoids redundant fetches when the parent already loaded the data).
+
+### ShortcutDetailedView
+
+An alternative that shows the full workflow actions flow visualization instead of just a summary. Use this when you want to display all the shortcut's actions:
+
+```swift
+ShortcutDetailedView(data: shortcutData)
+```
 
 ### ShortcutActionsView (Experimental)
 
@@ -299,6 +359,10 @@ The `ShortcutData` struct holds all fetched shortcut metadata:
 - `gradient` - LinearGradient resolved from `iconColor`
 - `image` - Pre-rendered image (loaded separately from `iconURL`)
 - `iconURL`, `shortcutURL` - Raw URLs for image and plist
+- `createdAt`, `modifiedAt` - Timestamps from the API
+- `signingStatus` - Signing status (e.g., "APPROVED")
+- `actionCount` - Number of actions (fetched separately from plist)
+- `isApproved` - Computed property, true if `signingStatus == "APPROVED"`
 
 Conforms to `Identifiable` for use with `.sheet(item:)` and similar APIs.
 
@@ -341,6 +405,9 @@ The response contains:
 - `icon_color` - Internal color code (Int64)
 - `icon_glyph` - SF Symbol glyph identifier
 - `icon` - Custom icon image URL (if set)
+- `created.timestamp` - Creation timestamp (milliseconds)
+- `modified.timestamp` - Last modified timestamp (milliseconds)
+- `signingStatus` - Signing status (e.g., "APPROVED")
 
 See [docs/iCloud-API.md](docs/iCloud-API.md) for full response structure and color code mappings.
 
