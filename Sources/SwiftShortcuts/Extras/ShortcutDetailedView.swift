@@ -1,34 +1,29 @@
 //
-//  ShortcutDetailView.swift
+//  ShortcutDetailedView.swift
 //  SwiftShortcuts
+//
+//  A detailed view showing the full workflow actions flow.
+//  This is an example component for developers who want the full actions visualization.
 //
 
 import SwiftUI
 import Conditionals
 
-/// A detail view for displaying shortcut information in a sheet.
+/// A detailed view for displaying shortcut information with full workflow actions.
 ///
-/// Shows the shortcut tile with a summary of metadata (action count, creation date)
-/// and an "Add Shortcut" button. Typically presented as a sheet when tapping a `ShortcutTile`.
+/// Shows the shortcut's workflow actions in a flow visualization with an "Add Shortcut" button.
+/// This is a more detailed alternative to `ShortcutDetailView` for developers who want
+/// to display the complete actions flow.
 ///
 /// ```swift
-/// ShortcutTile(id: "abc123") { url in
-///     showSheet = true
-///     selectedURL = url
-/// }
-/// .sheet(isPresented: $showSheet) {
-///     ShortcutDetailView(url: selectedURL)
-/// }
+/// ShortcutDetailedView(url: "https://www.icloud.com/shortcuts/abc123")
 /// ```
 ///
 /// For pre-loaded data (avoids redundant fetching):
 /// ```swift
-/// ShortcutDetailView(data: shortcutData)
+/// ShortcutDetailedView(data: shortcutData, actions: actions)
 /// ```
-///
-/// For a more detailed view with full workflow actions visualization, see
-/// `ShortcutDetailedView` in the Extras folder.
-public struct ShortcutDetailView: View {
+public struct ShortcutDetailedView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
     @Environment(\.shortcutErrorHandler) private var errorHandler
@@ -36,25 +31,36 @@ public struct ShortcutDetailView: View {
     // Source of data
     private enum DataSource {
         case url(String)
-        case preloaded(data: ShortcutData)
+        case partial(data: ShortcutData)  // Has metadata, needs actions
+        case complete(data: ShortcutData, actions: [WorkflowAction])  // All data provided
     }
 
     private let dataSource: DataSource
 
     @State private var shortcutData: ShortcutData?
+    @State private var fetchedActions: [WorkflowAction] = []
     @State private var isLoading = false
     @State private var error: ShortcutError?
 
+    private var effectiveActions: [WorkflowAction] {
+        switch dataSource {
+        case .url, .partial:
+            return fetchedActions
+        case .complete(_, let actions):
+            return actions
+        }
+    }
+
     // MARK: - URL-based Initializers
 
-    /// Creates a shortcut detail view from an iCloud share URL.
+    /// Creates a detailed shortcut view from an iCloud share URL.
     ///
     /// - Parameter url: The iCloud share URL (e.g., "https://www.icloud.com/shortcuts/abc123")
     public init(url: String) {
         self.dataSource = .url(url)
     }
 
-    /// Creates a shortcut detail view from a shortcut ID.
+    /// Creates a detailed shortcut view from a shortcut ID.
     ///
     /// - Parameter id: The shortcut ID (e.g., "f00836becd2845109809720d2a70e32f")
     public init(id: String) {
@@ -63,15 +69,27 @@ public struct ShortcutDetailView: View {
 
     // MARK: - Pre-loaded Initializers
 
-    /// Creates a shortcut detail view with pre-loaded metadata.
+    /// Creates a detailed shortcut view with pre-loaded metadata. Fetches actions only.
     ///
     /// Use this when you already have the shortcut data from a tile tap.
-    /// Action count will be fetched if not already present in the data.
     ///
     /// - Parameter data: The pre-loaded shortcut data
     public init(data: ShortcutData) {
-        self.dataSource = .preloaded(data: data)
+        self.dataSource = .partial(data: data)
         self._shortcutData = State(initialValue: data)
+    }
+
+    /// Creates a detailed shortcut view with fully pre-loaded data. No fetching will occur.
+    ///
+    /// Use this when you already have all the data to avoid redundant API calls.
+    ///
+    /// - Parameters:
+    ///   - data: The pre-loaded shortcut data
+    ///   - actions: The pre-loaded workflow actions
+    public init(data: ShortcutData, actions: [WorkflowAction]) {
+        self.dataSource = .complete(data: data, actions: actions)
+        self._shortcutData = State(initialValue: data)
+        self._fetchedActions = State(initialValue: actions)
     }
 
     // MARK: - Body
@@ -99,26 +117,22 @@ public struct ShortcutDetailView: View {
                     .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let data = shortcutData {
-                    VStack(spacing: 20) {
-                        Spacer()
-
-                        // Shortcut tile
+                    ScrollView {
+                        // Pass pre-loaded data to children - NO redundant fetching
                         ShortcutTile(data: data)
                             .frame(height: 110)
                             .frame(maxWidth: 180)
                             .disabled(true)
 
-                        // Summary line
                         if isLoading {
                             ProgressView()
-                                .padding(.top, 8)
+                                .padding(.top, 40)
                         } else {
-                            ShortcutSummaryRow(data: data)
+                            ShortcutActionsView(data: data, actions: effectiveActions)
+                                .shortcutActionsViewStyle(.flow)
+                                .padding()
                         }
-
-                        Spacer()
                     }
-                    .padding()
                 } else {
                     // Loading state
                     ProgressView()
@@ -180,17 +194,19 @@ public struct ShortcutDetailView: View {
     private func loadDataIfNeeded() async {
         switch dataSource {
         case .url(let url):
-            await loadMetadata(from: url)
+            await loadEverything(from: url)
 
-        case .preloaded(let data):
-            // Fetch action count if not already present
-            if data.actionCount == nil {
-                await loadActionCount(shortcutURL: data.shortcutURL)
-            }
+        case .partial(let data):
+            // Only fetch actions, we already have metadata
+            await loadActionsOnly(shortcutURL: data.shortcutURL)
+
+        case .complete:
+            // Everything is pre-loaded, nothing to do
+            break
         }
     }
 
-    private func loadMetadata(from url: String) async {
+    private func loadEverything(from url: String) async {
         isLoading = true
         defer { isLoading = false }
 
@@ -204,13 +220,12 @@ public struct ShortcutDetailView: View {
                 data = data.with(image: image)
             }
 
-            // Fetch action count
-            if let shortcutURL = data.shortcutURL {
-                let count = try await ShortcutService.shared.fetchActionCount(from: shortcutURL)
-                data = data.with(actionCount: count)
-            }
-
             shortcutData = data
+
+            // Fetch actions
+            if let shortcutURL = data.shortcutURL {
+                fetchedActions = try await ShortcutService.shared.fetchWorkflowActions(from: shortcutURL)
+            }
         } catch let shortcutError as ShortcutError {
             handleError(shortcutError, url: url)
         } catch {
@@ -218,17 +233,18 @@ public struct ShortcutDetailView: View {
         }
     }
 
-    private func loadActionCount(shortcutURL: String?) async {
+    private func loadActionsOnly(shortcutURL: String?) async {
         guard let shortcutURL else { return }
 
         isLoading = true
         defer { isLoading = false }
 
         do {
-            let count = try await ShortcutService.shared.fetchActionCount(from: shortcutURL)
-            shortcutData = shortcutData?.with(actionCount: count)
+            fetchedActions = try await ShortcutService.shared.fetchWorkflowActions(from: shortcutURL)
+        } catch let shortcutError as ShortcutError {
+            handleError(shortcutError, url: shortcutURL)
         } catch {
-            // Action count fetch failed - not critical, just won't show count
+            handleError(.actionsFetchFailed(url: shortcutURL, underlying: error), url: shortcutURL)
         }
     }
 
@@ -251,67 +267,8 @@ public struct ShortcutDetailView: View {
     }
 }
 
-// MARK: - Summary Row
-
-/// A row displaying shortcut metadata summary (action count, creation date, signing status)
-private struct ShortcutSummaryRow: View {
-    let data: ShortcutData
-
-    private var formattedDate: String? {
-        guard let date = data.createdAt else { return nil }
-
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
-    }
-
-    var body: some View {
-        HStack(spacing: 6) {
-            // Signing status indicator
-            if data.isApproved {
-                Image(systemName: "checkmark.seal.fill")
-                    .foregroundStyle(.green)
-            }
-
-            // Action count
-            if let count = data.actionCount {
-                Text("\(count) action\(count == 1 ? "" : "s")")
-            }
-
-            // Creation date
-            if let dateString = formattedDate {
-                if data.actionCount != nil {
-                    Text("•")
-                        .foregroundStyle(.tertiary)
-                }
-                Text("Created \(dateString)")
-            }
-        }
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
-    }
-}
-
 // MARK: - Previews
 
-#Preview("Detail View") {
-    ShortcutDetailView(id: "6256bc4845dd46d6b04b3e9fdd2ad83d")
+#Preview("Detailed View") {
+    ShortcutDetailedView(id: "6256bc4845dd46d6b04b3e9fdd2ad83d")
 }
-
-#if os(iOS)
-@available(iOS 18, *)
-#Preview("In Sheet") {
-    @Previewable @Namespace var namespace
-    @Previewable @State var selectedData: ShortcutData?
-
-    ShortcutTile(id: "6256bc4845dd46d6b04b3e9fdd2ad83d") { url, data in
-        selectedData = data
-    }
-    .matchedTransitionSource(id: "shortcutTile", in: namespace)
-    .frame(width: 160, height: 110)
-    .sheet(item: $selectedData) { data in
-        ShortcutDetailView(data: data)
-            .navigationTransition(.zoom(sourceID: "shortcutTile", in: namespace))
-    }
-}
-#endif
